@@ -155,7 +155,7 @@ _%>
 <%_ if (fieldsContainOwnerManyToMany) { _%>
 
     @Override
-    public Mono<<%= persistClass %>> findOneWithEagerRelationships(Long id) {
+    public Mono<<%= persistClass %>> findOneWithEagerRelationships(<%= primaryKey.type %> id) {
         return findById(id);
     }
 
@@ -214,7 +214,7 @@ _%>
 <%_ if (fieldsContainOwnerManyToMany) { _%>
 
     @Override
-    public Mono<Void> deleteById(Long entityId) {
+    public Mono<Void> deleteById(<%= primaryKey.type %> entityId) {
         return deleteRelations(entityId).then(
              r2dbcEntityTemplate.delete(<%= persistClass %>.class).matching(query(where("id").is(entityId))).all().then()
         );
@@ -234,7 +234,7 @@ _%>
         return result.thenReturn(entity);
     }
 
-    protected Mono<Void> deleteRelations(Long entityId) {
+    protected Mono<Void> deleteRelations(<%= primaryKey.type %> entityId) {
   <%_ relationships.filter(function(rel) {
           return (rel.relationshipManyToMany && rel.ownerSide);
   }).forEach(function(rel, idx) {
