@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,41 +17,50 @@
  limitations under the License.
 -%>
 <%_
-const entityArrayOptionalChainSymbol = '?.';
 const order = 'desc';
-const testEntityPrimaryKey = this.generateTestEntityPrimaryKey(primaryKey, 0);
+const testEntityPrimaryKey = tsPrimaryKeySamples[0];
+const testEntityPrimaryKey2 = tsPrimaryKeySamples[1];
 _%>
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpHeaders, HttpResponse } from '@angular/common/http';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import {
+  ComponentFixture, TestBed,
+<%_ if (!readOnly) { _%>
+  fakeAsync, inject, tick,
+<%_ } _%>
+} from '@angular/core/testing';
+import { provideHttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import {
+  of,
+<%_ if (!readOnly) { _%>
+  Subject,
+<%_ } _%>
+} from 'rxjs';
+<%_ if (!readOnly) { _%>
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+<%_ } _%>
 
+<%_ if (!readOnly) { _%>
+import { sampleWithRequiredData } from '../<%= entityFileName %>.test-samples';
+<%_ } _%>
 import { <%= entityAngularName %>Service } from '../service/<%= entityFileName %>.service';
 
 import { <%= entityAngularName %>Component } from './<%= entityFileName %>.component';
-<%_ if (!paginationNo) { _%>
 import SpyInstance = jest.SpyInstance;
-<%_ } _%>
 
 describe('<%= entityAngularName %> Management Component', () => {
     let comp: <%= entityAngularName %>Component;
     let fixture: ComponentFixture<<%= entityAngularName %>Component>;
     let service: <%= entityAngularName %>Service;
-<%_ if (!paginationNo) { _%>
     let routerNavigateSpy: SpyInstance<Promise<boolean>>;
-<%_ } _%>
 
     beforeEach(() => {
         TestBed.configureTestingModule({
             imports: [
-              RouterTestingModule.withRoutes([{ path: '<%= entityPage %>', component: <%= entityAngularName %>Component }]),
-              HttpClientTestingModule,
               <%= entityAngularName %>Component,
             ],
             providers: [
+                provideHttpClient(),
                 {
                     provide: ActivatedRoute,
                     useValue: {
@@ -68,7 +77,17 @@ describe('<%= entityAngularName %> Management Component', () => {
 <%_ } _%>
                             })
                         ),
-                        snapshot: { queryParams: {} },
+                        snapshot: {
+                            queryParams: {},
+                            queryParamMap: jest.requireActual('@angular/router').convertToParamMap({
+                                page: '1',
+                                size: '1',
+                                sort: '<%- primaryKey.name %>,desc',
+<%_ if (jpaMetamodelFiltering) { _%>
+                                'filter[someId.in]': 'dc4279ea-cfb9-11ec-9d64-0242ac120002',
+<%_ } _%>
+                            }),
+                        },
                     }
                 }
             ]
@@ -79,40 +98,64 @@ describe('<%= entityAngularName %> Management Component', () => {
         fixture = TestBed.createComponent(<%= entityAngularName %>Component);
         comp = fixture.componentInstance;
         service = TestBed.inject(<%= entityAngularName %>Service);
-<%_ if (!paginationNo) { _%>
         routerNavigateSpy = jest.spyOn(comp.router, 'navigate');
-<%_ } _%>
 
-        const headers = new HttpHeaders();
-        jest.spyOn(service, 'query').mockReturnValue(
+        jest
+          .spyOn(service, 'query')
+          .mockReturnValueOnce(
             of(
-                new HttpResponse({
-                    body: [<%- testEntityPrimaryKey %>],
-                    headers,
-                })
-            )
-        );
-    });
+              new HttpResponse({
+                body: [<%- testEntityPrimaryKey %>],
+                headers: new HttpHeaders({
+                  link: '<http://localhost/api/foo?page=1&size=20>; rel="next"',
+                }),
+              }),
+            ),
+          )
+          .mockReturnValueOnce(
+            of(
+              new HttpResponse({
+                body: [<%- testEntityPrimaryKey2 %>],
+                headers: new HttpHeaders({
+                  link: '<http://localhost/api/foo?page=0&size=20>; rel="prev",<http://localhost/api/foo?page=2&size=20>; rel="next"',
+                }),
+              }),
+            ),
+          );
+        });
 
-    it('Should call load all on init', () => {
+    it('should call load all on init', () => {
         // WHEN
         comp.ngOnInit();
 
         // THEN
         expect(service.query).toHaveBeenCalled();
-        expect(comp.<%= entityInstancePlural %><%= entityArrayOptionalChainSymbol %>[0]).toEqual(expect.objectContaining(<%- testEntityPrimaryKey %>));
+        expect(comp.<%= entityInstancePlural %>()[0]).toEqual(expect.objectContaining(<%- testEntityPrimaryKey %>));
     });
 
     describe('track<%= primaryKey.nameCapitalized %>', () => {
-        it('Should forward to <%= entityInstance %>Service', () => {
-            const entity = <%- this.generateTestEntityPrimaryKey(primaryKey, 0) %>;
+        it('should forward to <%= entityInstance %>Service', () => {
+            const entity = <%- tsPrimaryKeySamples[0] %>;
             jest.spyOn(service, 'get<%= entityAngularName %>Identifier');
-            const <%= primaryKey.name %> = comp.track<%= primaryKey.nameCapitalized %>(0, entity);
+            const <%= primaryKey.name %> = comp.track<%= primaryKey.nameCapitalized %>(entity);
             expect(service.get<%= entityAngularName %>Identifier).toHaveBeenCalledWith(entity);
             expect(<%= primaryKey.name %>).toBe(entity.<%= primaryKey.name %>);
         });
     });
-<%_ if (!paginationNo) { _%>
+
+    it('should calculate the sort attribute for a non-id attribute', () => {
+        // WHEN
+        comp.navigateToWithComponentValues({ predicate: 'non-existing-column', order: 'asc' });
+
+        // THEN
+        expect(routerNavigateSpy).toHaveBeenLastCalledWith(expect.anything(),
+          expect.objectContaining({
+            queryParams: expect.objectContaining({
+                sort: ['non-existing-column,asc']
+              })
+          }));
+    });
+<%_ if (paginationPagination) { _%>
 
     it('should load a page', () => {
         // WHEN
@@ -121,6 +164,7 @@ describe('<%= entityAngularName %> Management Component', () => {
         // THEN
         expect(routerNavigateSpy).toHaveBeenCalled();
     });
+<%_ } _%>
 
     it('should calculate the sort attribute for an id', () => {
         // WHEN
@@ -129,45 +173,77 @@ describe('<%= entityAngularName %> Management Component', () => {
         // THEN
         expect(service.query).toHaveBeenLastCalledWith(expect.objectContaining({ sort: ['<%- primaryKey.fields.map(field => field.fieldName).join(',') %>,<%= order %>'] }));
     });
+<%_ if (paginationInfiniteScroll) { _%>
 
-    it('should calculate the sort attribute for a non-id attribute', () => {
+  it('should infinite scroll', () => {
+    // GIVEN
+    comp.loadNextPage();
+    comp.loadNextPage();
+    comp.loadNextPage();
 
+    // THEN
+    expect(service.query).toHaveBeenCalledTimes(3);
+    expect(service.query).toHaveBeenNthCalledWith(2, expect.objectContaining({ page: '1' }));
+    expect(service.query).toHaveBeenLastCalledWith(expect.objectContaining({ page: '2' }));
+  });
+<%_ } _%>
+<%_ if (jpaMetamodelFiltering && paginationPagination) { _%>
+
+  it('should calculate the filter attribute', () => {
+    // WHEN
+    comp.ngOnInit();
+
+    // THEN
+    expect(service.query).toHaveBeenLastCalledWith(expect.objectContaining({ 'someId.in': ['dc4279ea-cfb9-11ec-9d64-0242ac120002'] }));
+  });
+<%_ } _%>
+<%_ if (!readOnly) { _%>
+
+  describe('delete', () => {
+    let ngbModal: NgbModal;
+    let deleteModalMock: any;
+
+    beforeEach(() => {
+      deleteModalMock = { componentInstance: {}, closed: new Subject() };
+      // NgbModal is not a singleton using TestBed.inject.
+      // ngbModal = TestBed.inject(NgbModal);
+      ngbModal = (comp as any).modalService;
+      jest.spyOn(ngbModal, 'open').mockReturnValue(deleteModalMock);
+    });
+
+    it('on confirm should call load', inject(
+      [],
+      fakeAsync(() => {
         // GIVEN
-        comp.predicate = 'name';
+        jest.spyOn(comp, 'load');
 
         // WHEN
-        comp.navigateToWithComponentValues();
+        comp.delete(sampleWithRequiredData);
+        deleteModalMock.closed.next('deleted');
+        tick();
 
         // THEN
-        expect(routerNavigateSpy).toHaveBeenLastCalledWith(expect.anything(),
-          expect.objectContaining({
-            queryParams: expect.objectContaining({
-                sort: ['name,asc']
-              })
-          }));
-    });
-  <%_ if (paginationInfiniteScroll) { _%>
+        expect(ngbModal.open).toHaveBeenCalled();
+        expect(comp.load).toHaveBeenCalled();
+      }),
+    ));
 
-    it('should re-initialize the page', () => {
+    it('on dismiss should call load', inject(
+      [],
+      fakeAsync(() => {
+        // GIVEN
+        jest.spyOn(comp, 'load');
+
         // WHEN
-        comp.loadPage(1);
-        comp.reset();
+        comp.delete(sampleWithRequiredData);
+        deleteModalMock.closed.next();
+        tick();
 
         // THEN
-        expect(comp.page).toEqual(1);
-        expect(service.query).toHaveBeenCalledTimes(2);
-        expect(comp.<%= entityInstancePlural %><%= entityArrayOptionalChainSymbol %>[0]).toEqual(expect.objectContaining(<%- testEntityPrimaryKey %>));
-    });
-  <%_ } _%>
-  <%_ if (jpaMetamodelFiltering && paginationPagination) { _%>
-
-    it('should calculate the filter attribute', () => {
-        // WHEN
-        comp.ngOnInit();
-
-        // THEN
-        expect(service.query).toHaveBeenLastCalledWith(expect.objectContaining({ 'someId.in': ['dc4279ea-cfb9-11ec-9d64-0242ac120002'] }));
-    });
-  <%_ } _%>
+        expect(ngbModal.open).toHaveBeenCalled();
+        expect(comp.load).not.toHaveBeenCalled();
+      }),
+    ));
+  });
 <%_ } _%>
 });

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -30,9 +30,8 @@ const initialState = {
   user: defaultValue,
   updating: false,
   updateSuccess: false,
-  totalItems: 0
+  totalItems: 0,
 };
-
 
 const apiUrl = 'api/users';
 const adminUrl = 'api/admin/users';
@@ -50,7 +49,9 @@ export const getUsersAsAdmin = createAsyncThunk('userManagement/fetch_users_as_a
 });
 
 export const getRoles = createAsyncThunk('userManagement/fetch_roles', async () => {
-  return axios.get<any[]>(`api/authorities`);
+  const response = await axios.get<any[]>(`api/authorities`);
+  response.data = response?.data?.map(authority => authority.name);
+  return response;
 });
 
 export const getUser = createAsyncThunk(
@@ -59,7 +60,7 @@ export const getUser = createAsyncThunk(
     const requestUrl = `${adminUrl}/${id}`;
     return axios.get<IUser>(requestUrl);
   },
-  { serializeError: serializeAxiosError }
+  { serializeError: serializeAxiosError },
 );
 
 export const createUser = createAsyncThunk(
@@ -69,7 +70,7 @@ export const createUser = createAsyncThunk(
     thunkAPI.dispatch(getUsersAsAdmin({}));
     return result;
   },
-  { serializeError: serializeAxiosError }
+  { serializeError: serializeAxiosError },
 );
 
 export const updateUser = createAsyncThunk(
@@ -79,7 +80,7 @@ export const updateUser = createAsyncThunk(
     thunkAPI.dispatch(getUsersAsAdmin({}));
     return result;
   },
-  { serializeError: serializeAxiosError }
+  { serializeError: serializeAxiosError },
 );
 
 export const deleteUser = createAsyncThunk(
@@ -90,7 +91,7 @@ export const deleteUser = createAsyncThunk(
     thunkAPI.dispatch(getUsersAsAdmin({}));
     return result;
   },
-  { serializeError: serializeAxiosError }
+  { serializeError: serializeAxiosError },
 );
 
 export type UserManagementState = Readonly<typeof initialState>;
@@ -140,23 +141,12 @@ export const UserManagementSlice = createSlice({
         state.updateSuccess = false;
         state.updating = true;
       })
-      .addMatcher(
-        isRejected(
-          getUsers,
-          getUsersAsAdmin,
-          getUser,
-          getRoles,
-          createUser,
-          updateUser,
-          deleteUser
-        ),
-        (state, action) => {
-          state.loading = false;
-          state.updating = false;
-          state.updateSuccess = false;
-          state.errorMessage = action.error.message;
-        }
-      );
+      .addMatcher(isRejected(getUsers, getUsersAsAdmin, getUser, getRoles, createUser, updateUser, deleteUser), (state, action) => {
+        state.loading = false;
+        state.updating = false;
+        state.updateSuccess = false;
+        state.errorMessage = action.error.message;
+      });
   },
 });
 

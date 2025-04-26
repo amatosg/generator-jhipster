@@ -1,5 +1,5 @@
 #
-# Copyright 2013-2023 the original author or authors from the JHipster project.
+# Copyright 2013-2025 the original author or authors from the JHipster project.
 #
 # This file is part of the JHipster project, see https://www.jhipster.tech/
 # for more information.
@@ -53,8 +53,11 @@ inputs:
       }}
 outputs:
   matrix:
-    description: 'Build Matrix'
+    description: 'Build matrix'
     value: ${{ steps.build-matrix.outputs.matrix }}
+  empty-matrix:
+    description: 'Build matrix is empty'
+    value: ${{ steps.build-matrix.outputs.empty-matrix }}
   skip-workflow:
     description: 'Skip workflow'
     value: ${{ inputs.skip-workflow }}
@@ -88,9 +91,9 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/setup-node@v3
+    - uses: actions/setup-node@v4
       with:
-        node-version: 18
+        node-version: 20
     - name: 'Check changes'
       id: build-changes
       run: |
@@ -135,5 +138,8 @@ runs:
         cat matrix.json >> $GITHUB_OUTPUT
         echo '' >> $GITHUB_OUTPUT
         echo 'EOF' >> $GITHUB_OUTPUT
+        EMPTY_MATRIX=$(cat matrix.json | jq '.include | length == 0')
+        echo "empty-matrix=${EMPTY_MATRIX}" >> $GITHUB_OUTPUT
+        cat $GITHUB_OUTPUT
         rm matrix.json
       shell: bash

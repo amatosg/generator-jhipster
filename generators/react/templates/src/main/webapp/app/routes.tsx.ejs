@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,8 +17,14 @@
  limitations under the License.
 -%>
 import React<% if (applicationTypeGateway && microfrontend) { %>, { Suspense }<% } %> from 'react';
-import { Route <% if (communicationSpringWebsocket) { %>, useLocation <% } %>} from 'react-router-dom';
+import { Route } from 'react-router';
+<% if (communicationSpringWebsocket) { %>
+import { useLocation } from 'react-router-dom';
+<% } %>
 import Loadable from 'react-loadable';
+<%_ if (applicationTypeGateway && microfrontend) { _%>
+import { importRemote } from '@module-federation/utilities';
+<%_ } _%>
 
 <%_ if (!authenticationTypeOauth2) { _%>
 import Login from 'app/modules/login/login';
@@ -46,7 +52,7 @@ import { sendActivity } from 'app/config/websocket-middleware';
 const loading = <div>loading ...</div>;
 <%_ if (generateUserManagement) { _%>
 
-  const Account = Loadable({
+const Account = Loadable({
   loader: () => import(/* webpackChunkName: "account" */ 'app/modules/account'),
   loading: () => loading,
 });
@@ -59,10 +65,14 @@ const Admin = Loadable({
 <%_ if (applicationTypeGateway && microfrontend) { _%>
 
   <%_ for (const remote of microfrontends) { _%>
-const <%= remote.capitalizedBaseName %>Routes = React.lazy(() => import('@<%= remote.lowercaseBaseName %>/entities-routes').catch(() => import('app/shared/error/error-loading')));
+const <%= remote.capitalizedBaseName %>Routes = React.lazy(() => importRemote<any>({
+  url: `./services/<%= remote.lowercaseBaseName %>`,
+  scope: '<%= remote.lowercaseBaseName %>',
+  module: './entities-routes',
+}).catch(() => import('app/shared/error/error-loading')));
+
   <%_ } _%>
 <%_ } _%>
-
 const AppRoutes = () => {
 <%_ if (communicationSpringWebsocket) { _%>
   const pageLocation = useLocation();
@@ -105,7 +115,7 @@ const AppRoutes = () => {
           }
         />
 <%_ if (authenticationTypeOauth2) { _%>
-        <Route path="oauth2/authorization/oidc" element={<LoginRedirect />} />
+        <Route path="sign-in" element={<LoginRedirect />} />
 <%_ } _%>
 <%_ if (applicationTypeGateway && microfrontend) { _%>
   <%_ for (const remote of microfrontends) { _%>

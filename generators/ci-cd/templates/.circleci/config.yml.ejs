@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -93,7 +93,7 @@ jobs:
                 <%_ if (ciCdIntegrationsHeroku) { _%>
             - run:
                 name: Deploy to Heroku
-                command: './mvnw -ntp com.heroku.sdk:heroku-maven-plugin:2.0.5:deploy -DskipTests -Pprod -Dheroku.buildpacks=heroku/jvm -Dheroku.appName=<%= herokuAppName %>'
+                command: './mvnw -ntp com.heroku.sdk:heroku-maven-plugin:3.0.7:deploy -DskipTests -Pprod -Dheroku.buildpacks=heroku/jvm -Dheroku.appName=<%= herokuAppName %>'
                 <%_ } _%>
             <%_ } else if (buildToolGradle) { _%>
                 <%_ if (ciCdIntegrationsHeroku) { _%>

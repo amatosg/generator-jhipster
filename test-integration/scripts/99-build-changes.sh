@@ -74,6 +74,8 @@ echo "::group::Check Client Common"
 git -c color.ui=always diff --exit-code @~1 -- \
   'generators/bootstrap-application-client' \
   'generators/client/**' \
+  'generators/cypress/**' \
+  'generators/javascript/**' \
   || CLIENT_COMMON=true
 echo "::endgroup::"
 
@@ -81,6 +83,7 @@ echo "::group::Check Client"
 git -c color.ui=always diff --exit-code @~1 -- \
   'generators/bootstrap-application-client' \
   'generators/client/**' \
+  'generators/javascript/**' \
   'generators/angular/**' \
   'generators/react/**' \
   'generators/vue/**' \
@@ -92,14 +95,16 @@ git -c color.ui=always diff --exit-code @~1 -- \
   'generators/base-entity-changes' \
   'generators/bootstrap-application-server' \
   'generators/cucumber' \
+  'generators/feign-client' \
   'generators/gatling' \
   'generators/gradle' \
   'generators/java' \
   'generators/liquibase' \
   'generators/maven' \
   'generators/server' \
+  'generators/spring-boot' \
   'generators/spring-cache' \
-  'generators/spring-cloud-steam' \
+  'generators/spring-cloud-stream' \
   'generators/spring-data-cassandra' \
   'generators/spring-data-couchbase' \
   'generators/spring-data-elasticsearch' \
@@ -112,6 +117,7 @@ echo "::endgroup::"
 
 echo "::group::Check Common"
 git -c color.ui=always diff --exit-code @~1 -- \
+  '.blueprint' \
   '.github/actions' \
   '.github/workflows' \
   'generators/app' \
@@ -136,7 +142,7 @@ git -c color.ui=always diff --exit-code @~1 -- \
   'generators/bootstrap' \
   'generators/bootstrap-application-base' \
   $(ls generators/*.*) \
-  || CLIENT=true SERVER=true COMMON=true ANY=true
+  || CLIENT=true SERVER=true COMMON=true ANY=true ANGULAR=true REACT=true VUE=true
 echo "::endgroup::"
 
 echo "::group::Check E2E"

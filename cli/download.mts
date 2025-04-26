@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2023 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,32 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import fs from 'fs';
-import { get } from 'https';
+import { writeFile } from 'fs/promises';
 import path from 'path';
 import { inspect } from 'util';
 
+import { packageJson } from '../lib/index.js';
 import { logger } from './utils.mjs';
-import { packageJson } from '../lib/index.mjs';
 
-const downloadFile = (url: string, filename: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    logger.verboseInfo(`Downloading file: ${url}`);
-    get(url, response => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`Error downloading ${url}: ${response.statusCode} - ${response.statusMessage}`));
-        return;
-      }
-
-      logger.debug(`Creating file: ${path.join(filename)}`);
-      const fileStream = fs.createWriteStream(`${filename}`);
-      fileStream.on('finish', () => fileStream.close());
-      fileStream.on('close', () => resolve(filename));
-      response.pipe(fileStream);
-    }).on('error', e => {
-      reject(e);
-    });
-  });
+const downloadFile = async (url: string, filename: string): Promise<string> => {
+  logger.verboseInfo(`Downloading file: ${url}`);
+  const response = await fetch(url, { method: 'GET' });
+  if (response.status !== 200) {
+    throw new Error(`Error downloading ${url}: ${response.status} - ${response.statusText}`);
+  }
+  logger.debug(`Creating file: ${path.join(filename)}`);
+  await writeFile(filename, await response.body!, 'utf8');
+  return filename;
 };
 
 export type DownloadJdlOptions = { skipSampleRepository?: boolean };

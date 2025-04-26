@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -28,35 +28,42 @@
 import <%= generatorClass %>Generator from 'generator-jhipster/generators/<%= jhipsterGenerator %>';
 <%_ } _%>
 <%_ if (priorities.find(priority => priority.name === 'initializing')) { _%>
-import command from './command.<%- js ? '' : 'm' %>js';
+import command from './command.<%- blueprintMjsExtension %>';
 <%_ } _%>
 
 <%_ if (application.dynamic) { _%>
 // eslint-disable-next-line import/prefer-default-export
 export async function createGenerator(env) {
-  const jhipsterGenerator = 'jhipster:<%= generator %>';
-  const jhipsterPath = env.getPackagePath(jhipsterGenerator);
-  const constants = (await import(`${jhipsterPath}/generators/generator-constants.js`)).default;
-  const ParentClass = await env.requireGenerator(jhipsterGenerator);
-  return class <%= generatorClass %>Generator extends ParentClass {
+  /** @type {typeof import('generator-jhipster/generators/<%= jhipsterGenerator %>').default} */
+  let <%= generatorClass %>Generator;
+  try {
+    // Try to use locally installed generator-jhipster
+    <%= generatorClass %>Generator = (await import('generator-jhipster/generators/<%= jhipsterGenerator %>')).default;
+  } catch {
+    // Fallback to the currently running jhipster.
+    const jhipsterGenerator = 'jhipster:<%= generator %>';
+    <%= generatorClass %>Generator = await env.requireGenerator(jhipsterGenerator);
+  }
+
+  return class extends <%= generatorClass %>Generator {
 <%_ } else { _%>
 export default class extends <%= generatorClass %>Generator {
 <%_ } _%>
-<%_ if (sbs) { _%>
-  constructor(args, opts, features) {
-    super(args, opts, { ...features, sbsBlueprint: true });
-  }
-
-<%_ } else if (!customGenerator) { _%>
   constructor(args, opts, features) {
     super(args, opts, {
       ...features,
+      queueCommandTasks: true,
+<%_ if (sbs) { _%>
+      sbsBlueprint: true,
+<%_ } else if (!customGenerator) { _%>
       checkBlueprint: true,
       // Dropped it once migration is done.
       jhipster7Migration: true,
+<%_ } _%>
     });
   }
 
+<%_ if (!sbs && !customGenerator) { _%>
   async beforeQueue() {
     await super.beforeQueue();
   }
@@ -76,10 +83,7 @@ export default class extends <%= generatorClass %>Generator {
         { application }
   <%_ } _%>
       ) {
-  <%_ if (priority.name === 'initializing') { _%>
-        this.parseJHipsterArguments(command.arguments);
-        this.parseJHipsterOptions(command.options);
-  <%_ } else if (priority.name === 'writing') { _%>
+  <%_ if (priority.name === 'writing') { _%>
         await this.writeFiles({
           sections: {
             files: [

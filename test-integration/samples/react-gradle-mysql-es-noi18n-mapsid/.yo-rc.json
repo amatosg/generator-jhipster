@@ -14,7 +14,6 @@
     "devDatabaseType": "mysql",
     "dtoSuffix": "DTO",
     "embeddableLaunchScript": false,
-    "enableHibernateCache": true,
     "enableSwaggerCodegen": false,
     "enableTranslation": false,
     "entitySuffix": "",
@@ -30,6 +29,6 @@
     "serverPort": "8080",
     "serviceDiscoveryType": "no",
     "testFrameworks": ["gatling", "cypress"],
-    "websocket": "no"
+    "websocket": "spring-websocket"
   }
 }

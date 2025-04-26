@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -52,7 +52,6 @@ public class ColumnConverter implements ColumnConverterReactive {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T convert(@Nullable Object value, @Nullable Class<T> target) {
-
         if (value == null || target == null || ClassUtils.isAssignableValue(target, value)) {
             return (T) value;
         }
@@ -85,5 +84,4 @@ public class ColumnConverter implements ColumnConverterReactive {
             return convert(obj, target);
         }
     }
-
 }

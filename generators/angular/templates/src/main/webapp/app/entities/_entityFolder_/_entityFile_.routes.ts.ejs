@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -19,46 +19,63 @@
 import { Routes } from '@angular/router';
 
 import { UserRouteAccessService } from 'app/core/auth/user-route-access.service';
-import { <%= entityAngularName %>Component } from './list/<%= entityFileName %>.component';
-import { <%= entityAngularName %>DetailComponent } from './detail/<%= entityFileName %>-detail.component';
-<%_ if (!readOnly) { _%>
-import { <%= entityAngularName %>UpdateComponent } from './update/<%= entityFileName %>-update.component';
-<%_ } _%>
 import <%= entityAngularName %>Resolve from './route/<%= entityFileName %>-routing-resolve.service';
 import { ASC } from 'app/config/navigation.constants';
 
 const <%= entityInstance %>Route: Routes = [
   {
     path: '',
-    component: <%= entityAngularName %>Component,
+    loadComponent: () => import('./list/<%= entityFileName %>.component').then(m => m.<%= entityAngularName %>Component),
     data: {
+<%_ if (primaryKey.typeLong && primaryKey.autoGenerate) { _%>
       defaultSort: '<%- primaryKey.name %>,' + ASC,
+<%_ } _%>
+<%_ if (entityAngularReadAuthorities) { _%>
+      authorities: [<%- entityAngularReadAuthorities %>],
+<%_ } _%>
     },
-    canActivate: [UserRouteAccessService]
+    canActivate: [UserRouteAccessService],
   },
   {
     path: ':<%= primaryKey.name %>/view',
-    component: <%= entityAngularName %>DetailComponent,
+    loadComponent: () => import('./detail/<%= entityFileName %>-detail.component').then(m => m.<%= entityAngularName %>DetailComponent),
     resolve: {
       <%= entityInstance %>: <%= entityAngularName %>Resolve
     },
+<%_ if (entityAngularReadAuthorities) { _%>
+    data: {
+      authorities: [<%- entityAngularReadAuthorities %>],
+    },
+<%_ } _%>
     canActivate: [UserRouteAccessService]
   },
 <%_ if (!readOnly) { _%>
   {
     path: 'new',
-    component: <%= entityAngularName %>UpdateComponent,
+    loadComponent: () => import('./update/<%= entityFileName %>-update.component').then(m => m.<%= entityAngularName %>UpdateComponent),
     resolve: {
       <%= entityInstance %>: <%= entityAngularName %>Resolve
     },
+<%_ if (entityAngularAuthorities) { _%>
+    data: {
+      authorities: [<%- entityAngularAuthorities %>],
+    },
+<%_ } _%>
     canActivate: [UserRouteAccessService]
   },
+<%_ } _%>
+<%_ if (!readOnly && updatableEntity) { _%>
   {
     path: ':<%= primaryKey.name %>/edit',
-    component: <%= entityAngularName %>UpdateComponent,
+    loadComponent: () => import('./update/<%= entityFileName %>-update.component').then(m => m.<%= entityAngularName %>UpdateComponent),
     resolve: {
       <%= entityInstance %>: <%= entityAngularName %>Resolve
     },
+<%_ if (entityAngularAuthorities) { _%>
+    data: {
+      authorities: [<%- entityAngularAuthorities %>],
+    },
+<%_ } _%>
     canActivate: [UserRouteAccessService]
   },
 <%_ } _%>

@@ -1,7 +1,7 @@
 // The Vue build version to load with the `import` command
 // (runtime-only or standalone) has been set in webpack.common with an alias.
 import Vue, { createApp, provide, computed, watch<% if (enableTranslation) { %>, onMounted<% } %> } from 'vue';
-import { createPinia } from 'pinia'
+import { createPinia, storeToRefs } from 'pinia'
 <%_ if (enableTranslation) { _%>
 import { useI18n } from 'vue-i18n';
 <%_ } _%>
@@ -11,12 +11,17 @@ import { setupAxiosInterceptors } from '@/shared/config/axios-interceptor';
 
 import App from './app.vue';
 import router<% if (applicationTypeGateway && microfrontend) { %>, { lazyRoutes }<% } %> from './router';
-import { initFortAwesome<% if (enableTranslation) { %>, initI18N<% } %> } from './shared/config/config';
-import { initBootstrapVue } from './shared/config/config-bootstrap-vue';
-import JhiItemCountComponent from './shared/jhi-item-count.vue';
-import JhiSortIndicatorComponent from './shared/sort/jhi-sort-indicator.vue';
-import LoginService from './account/login.service';
-import AccountService from './account/account.service';
+import { initFortAwesome<% if (enableTranslation) { %>, initI18N<% } %> } from '@/shared/config/config';
+import { initBootstrapVue } from '@/shared/config/config-bootstrap-vue';
+import JhiItemCountComponent from '@/shared/jhi-item-count.vue';
+import JhiSortIndicatorComponent from '@/shared/sort/jhi-sort-indicator.vue';
+<%_ if (authenticationUsesCsrf) { _%>
+import LoginService from '@/account/login.service';
+<%_ } _%>
+<%_ if (generateUserManagement) { _%>
+import { useLoginModal } from '@/account/login-modal';
+<%_ } _%>
+import AccountService from '@/account/account.service';
 
 import '../content/scss/global.scss';
 import '../content/scss/vendor.scss';
@@ -26,8 +31,23 @@ import TranslationService from '@/locale/translation.service';
 <%_ if (communicationSpringWebsocket) { _%>
 import { useTrackerService } from './admin/tracker/tracker.service';
 <%_ } _%>
+<%_ if (applicationTypeGateway && microfrontend) { _%>
+import { init } from '@module-federation/enhanced/runtime';
 
-const pinia = createPinia()
+init({
+  name: '<%= lowercaseBaseName %>',
+  remotes: [
+  <%_ for (const remote of microfrontends) { _%>
+    {
+      name: '<%= remote.lowercaseBaseName %>',
+      entry: '/<%= remote.endpointPrefix %>/remoteEntry.js',
+    },
+  <%_ } _%>
+  ],
+});
+<%_ } _%>
+
+const pinia = createPinia();
 
 // jhipster-needle-add-entity-service-to-main-import - JHipster will import entities services here
 
@@ -60,6 +80,7 @@ Vue.configureCompat({
   OPTIONS_DESTROYED: 'suppress-warning',
   RENDER_FUNCTION: 'suppress-warning',
   WATCH_ARRAY: 'suppress-warning',
+  PRIVATE_APIS: 'suppress-warning',
 });
 
 <%_ if (enableTranslation) { _%>
@@ -69,14 +90,12 @@ const i18n = initI18N();
 const app = createApp({
   compatConfig: { MODE: 3 },
   components: { App },
-  template: '<App/>',
-<%_ if (!authenticationTypeOauth2) { _%>
-  setup(_props, { emit }) {
-    const loginService = new LoginService({ emit });
-    provide('loginService', loginService);
-<%_ } else { _%>
   setup() {
+<%_ if (authenticationUsesCsrf) { _%>
     provide('loginService', new LoginService());
+<%_ } _%>
+<%_ if (generateUserManagement) { _%>
+    const { hideLogin, showLogin } = useLoginModal();
 <%_ } _%>
     const store = useStore();
     const accountService = new AccountService(store);
@@ -101,14 +120,14 @@ const app = createApp({
         if (!translationService.getLocalStoreLanguage()) {
           await changeLanguage(value.langKey);
         }
-      }
+      },
     );
 
     watch(
       () => translationStore.currentLanguage,
       value => {
         translationService.setLocale(value);
-      }
+      },
     );
 
     onMounted(async () => {
@@ -127,7 +146,7 @@ const app = createApp({
     router.beforeResolve(async (to, from, next) => {
 <%_ if (!authenticationTypeOauth2) { _%>
       // Make sure login modal is closed
-      loginService.hideLogin();
+      hideLogin();
 
 <%_ } _%>
       if (!store.authenticated) {
@@ -157,7 +176,7 @@ const app = createApp({
 <%_ if (authenticationTypeOauth2) { _%>
             window.location.reload();
 <%_ } else { _%>
-            loginService.openLogin();
+            showLogin();
 <%_ } _%>
             return;
           }
@@ -166,11 +185,15 @@ const app = createApp({
       },
       error => {
         return Promise.reject(error);
-      }
+      },
     );
 
-    provide('authenticated', computed(() => store.authenticated));
-    provide('currentUsername', computed(() => store.account?.login));
+    const { authenticated } = storeToRefs(store);
+    provide('authenticated', authenticated);
+    provide(
+      'currentUsername',
+      computed(() => store.account?.login),
+    );
 
 <%_ if (enableTranslation) { _%>
     provide('translationService', translationService);
@@ -179,12 +202,13 @@ const app = createApp({
     // jhipster-needle-add-entity-service-to-main - JHipster will import entities services here
 <%_ if (communicationSpringWebsocket) { _%>
 
-    provide('trackerService', useTrackerService());
+    provide('trackerService', useTrackerService({ authenticated }));
 <%_ } _%>
-<%_ if (applicationTypeMicroservice && microfrontend) { _%>
+<%_ if (enableTranslation && applicationTypeMicroservice && microfrontend) { _%>
     provide('microfrontendI18n', false);
 <%_ } _%>
   },
+  template: '<App/>',
 });
 
 initFortAwesome(app);

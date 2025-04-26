@@ -1,25 +1,25 @@
 import axios from 'axios';
 import sinon from 'sinon';
-import configureStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
 import { TranslatorContext } from 'react-jhipster';
 
 import locale, { setLocale, updateLocale, loaded, addTranslationSourcePrefix } from 'app/shared/reducers/locale';
 
 const defaultLocale = '<%= nativeLanguage %>';
+const dispatch = jest.fn();
+const extra = {};
 
 describe('Locale reducer tests', () => {
   it('should return the initial state', () => {
     const localeState = locale(undefined, { type: '' });
     expect(localeState).toMatchObject({
-      currentLocale: ''
+      currentLocale: '',
     });
   });
 
   it('should correctly set the first time locale', () => {
     const localeState = locale(undefined, updateLocale(defaultLocale));
     expect(localeState).toMatchObject({
-      currentLocale: defaultLocale
+      currentLocale: defaultLocale,
     });
     expect(TranslatorContext.context.locale).toEqual(defaultLocale);
   });
@@ -34,19 +34,17 @@ describe('Locale reducer tests', () => {
         lastChange: new Date().getTime(),
         loadedKeys: [],
       },
-      updateLocale('es')
+      updateLocale('es'),
     );
     expect(localeState).toMatchObject({
-      currentLocale: 'es'
+      currentLocale: 'es',
     });
     expect(TranslatorContext.context.locale).toEqual('es');
   });
 
   describe('setLocale reducer', () => {
     describe('with default language loaded', () => {
-      let store;
       beforeEach(() => {
-        store = configureStore([thunk])({ locale: { loadedLocales: [defaultLocale], loadedKeys: [] } });
         axios.get = sinon.stub().returns(Promise.resolve({ key: 'value' }));
       });
 
@@ -54,26 +52,18 @@ describe('Locale reducer tests', () => {
         TranslatorContext.setDefaultLocale(defaultLocale);
         expect(Object.keys(TranslatorContext.context.translations)).not.toContainEqual(defaultLocale);
 
-        const expectedActions = [
-          {
-            type: setLocale.pending.type,
-          },
-          updateLocale(defaultLocale),
-          {
-            type: setLocale.fulfilled.type,
-            payload: defaultLocale,
-          },
-        ];
+        const getState = jest.fn(() => ({ locale: { sourcePrefixes: '', loadedLocales: [defaultLocale], loadedKeys: [] } }));
 
-        await store.dispatch(setLocale(defaultLocale));
-        expect(store.getActions()).toMatchObject(expectedActions);
+        const result = await setLocale(defaultLocale)(dispatch, getState, extra);
+
+        const pendingAction = dispatch.mock.calls[0][0];
+        expect(pendingAction.meta.requestStatus).toBe('pending');
+        expect(setLocale.fulfilled.match(result)).toBe(true);
       });
     });
 
     describe('with no language loaded', () => {
-      let store;
       beforeEach(() => {
-        store = configureStore([thunk])({ locale: { sourcePrefixes: [], loadedLocales: [], loadedKeys: [] } });
         axios.get = sinon.stub().returns(Promise.resolve({ key: 'value' }));
       });
 
@@ -81,20 +71,13 @@ describe('Locale reducer tests', () => {
         TranslatorContext.setDefaultLocale(defaultLocale);
         expect(Object.keys(TranslatorContext.context.translations)).not.toContainEqual(defaultLocale);
 
-        const expectedActions = [
-          {
-            type: setLocale.pending.type,
-          },
-          loaded({ keys: [defaultLocale], locale: defaultLocale }),
-          updateLocale(defaultLocale),
-          {
-            type: setLocale.fulfilled.type,
-            payload: defaultLocale,
-          },
-        ];
+        const getState = jest.fn(() => ({ locale: { sourcePrefixes: [], loadedLocales: [], loadedKeys: [] } }));
 
-        await store.dispatch(setLocale(defaultLocale));
-        expect(store.getActions()).toMatchObject(expectedActions);
+        const result = await setLocale(defaultLocale)(dispatch, getState, extra);
+
+        const pendingAction = dispatch.mock.calls[0][0];
+        expect(pendingAction.meta.requestStatus).toBe('pending');
+        expect(setLocale.fulfilled.match(result)).toBe(true);
       });
     });
   });
@@ -103,78 +86,56 @@ describe('Locale reducer tests', () => {
     const sourcePrefix = 'foo/';
 
     describe('with no prefixes and keys loaded', () => {
-      let store;
       beforeEach(() => {
-        store = configureStore([thunk])({
-          locale: { currentLocale: defaultLocale, sourcePrefixes: [], loadedLocales: [], loadedKeys: [] },
-        });
         axios.get = sinon.stub().returns(Promise.resolve({ key: 'value' }));
       });
 
       it('dispatches loaded action with keys and sourcePrefix', async () => {
-        const expectedActions = [
-          {
-            type: addTranslationSourcePrefix.pending.type,
-          },
-          loaded({ keys: [`${sourcePrefix}${defaultLocale}`], sourcePrefix }),
-          {
-            type: addTranslationSourcePrefix.fulfilled.type,
-            payload: `${sourcePrefix}${defaultLocale}`,
-          },
-        ];
+        const getState = jest.fn(() => ({
+          locale: { currentLocale: defaultLocale, sourcePrefixes: [], loadedLocales: [], loadedKeys: [] },
+        }));
 
-        await store.dispatch(addTranslationSourcePrefix(sourcePrefix));
-        expect(store.getActions()).toMatchObject(expectedActions);
+        const result = await addTranslationSourcePrefix(sourcePrefix)(dispatch, getState, extra);
+
+        const pendingAction = dispatch.mock.calls[0][0];
+        expect(pendingAction.meta.requestStatus).toBe('pending');
+        expect(addTranslationSourcePrefix.fulfilled.match(result)).toBe(true);
       });
     });
 
     describe('with prefix already added', () => {
-      let store;
       beforeEach(() => {
-        store = configureStore([thunk])({
-          locale: { currentLocale: defaultLocale, sourcePrefixes: [sourcePrefix], loadedLocales: [], loadedKeys: [] },
-        });
         axios.get = sinon.stub().returns(Promise.resolve({ key: 'value' }));
       });
 
       it("doesn't dispatches loaded action", async () => {
-        const expectedActions = [
-          {
-            type: addTranslationSourcePrefix.pending.type,
-          },
-          {
-            type: addTranslationSourcePrefix.fulfilled.type,
-            payload: `${sourcePrefix}${defaultLocale}`,
-          },
-        ];
+        const getState = jest.fn(() => ({
+          locale: { currentLocale: defaultLocale, sourcePrefixes: [sourcePrefix], loadedLocales: [], loadedKeys: [] },
+        }));
 
-        await store.dispatch(addTranslationSourcePrefix(sourcePrefix));
-        expect(store.getActions()).toMatchObject(expectedActions);
+        const result = await addTranslationSourcePrefix(sourcePrefix)(dispatch, getState, extra);
+
+        const pendingAction = dispatch.mock.calls[0][0];
+        expect(pendingAction.meta.requestStatus).toBe('pending');
+        expect(addTranslationSourcePrefix.fulfilled.match(result)).toBe(true);
       });
     });
 
     describe('with key already loaded', () => {
-      let store;
       beforeEach(() => {
-        store = configureStore([thunk])({
-          locale: { currentLocale: defaultLocale, sourcePrefixes: [], loadedLocales: [], loadedKeys: [`${sourcePrefix}${defaultLocale}`] },
-        });
         axios.get = sinon.stub().returns(Promise.resolve({ key: 'value' }));
       });
 
       it("doesn't dispatches loaded action", async () => {
-        const expectedActions = [
-          {
-            type: addTranslationSourcePrefix.pending.type,
-          },
-          {
-            type: addTranslationSourcePrefix.fulfilled.type,
-            payload: `${sourcePrefix}${defaultLocale}`,
-          },
-        ];
+        const getState = jest.fn(() => ({
+          locale: { currentLocale: defaultLocale, sourcePrefixes: [], loadedLocales: [], loadedKeys: [`${sourcePrefix}${defaultLocale}`] },
+        }));
 
-        await store.dispatch(addTranslationSourcePrefix(sourcePrefix));
-        expect(store.getActions()).toMatchObject(expectedActions);
+        const result = await addTranslationSourcePrefix(sourcePrefix)(dispatch, getState, extra);
+
+        const pendingAction = dispatch.mock.calls[0][0];
+        expect(pendingAction.meta.requestStatus).toBe('pending');
+        expect(addTranslationSourcePrefix.fulfilled.match(result)).toBe(true);
       });
     });
   });

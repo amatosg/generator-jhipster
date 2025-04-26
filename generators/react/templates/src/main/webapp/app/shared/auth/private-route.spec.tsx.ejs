@@ -1,11 +1,10 @@
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { render } from '@testing-library/react';
 <%_ if (enableTranslation) { _%>
 import { TranslatorContext } from 'react-jhipster';
 <%_ } _%>
 import configureStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
 import { Provider } from 'react-redux';
 
 import { AUTHORITIES } from 'app/config/constants';
@@ -22,13 +21,13 @@ describe('private-route component', () => {
   });
 <%_ } _%>
 
-  const mockStore = configureStore([thunk]);
+  const mockStore = configureStore();
   const wrapper = (Elem: JSX.Element, authentication) => {
     const store = mockStore({ authentication });
     return render(
       <Provider store={store}>
         <MemoryRouter>{Elem}</MemoryRouter>
-      </Provider>
+      </Provider>,
     );
   };
 
@@ -43,7 +42,7 @@ describe('private-route component', () => {
         account: {
           authorities: [],
         },
-      })
+      }),
     ).toThrow(Error);
     console.error = originalError;
   });
@@ -59,11 +58,9 @@ describe('private-route component', () => {
         account: {
           authorities: [],
         },
-      }
+      },
     );
-    expect(container.innerHTML).toMatch(
-      /<div class="insufficient-authority"><div class="alert alert-danger">.*<\/div><\/div>/
-    );
+    expect(container.innerHTML).toMatch(/<div class="insufficient-authority"><div class="alert alert-danger">.*<\/div><\/div>/);
   });
 
   it('Should render a route for the component provided when authenticated', () => {
@@ -77,7 +74,7 @@ describe('private-route component', () => {
         account: {
           authorities: ['ADMIN'],
         },
-      }
+      },
     );
     expect(container.innerHTML).toEqual('<div>Test</div>');
   });
@@ -93,7 +90,7 @@ describe('private-route component', () => {
             </PrivateRoute>
           }
         />
-        <Route path="<% if(authenticationTypeOauth2) { %>/oauth2/authorization/oidc<% } else { %>/login<% } %>" element={<div>Login</div>} />
+        <Route path="<% if(authenticationTypeOauth2) { %>/sign-in<% } else { %>/login<% } %>" element={<div>Login</div>} />
       </Routes>,
       {
         isAuthenticated: false,
@@ -101,7 +98,7 @@ describe('private-route component', () => {
         account: {
           authorities: ['ADMIN'],
         },
-      }
+      },
     );
     expect(container.innerHTML).not.toEqual('<div>Test</div>');
     expect(container.innerHTML).toEqual('<div>Login</div>');

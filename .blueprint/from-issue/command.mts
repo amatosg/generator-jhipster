@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2023 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,12 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { JHipsterCommandDefinition } from '../../generators/base/api.mjs';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
+import { GENERATOR_APP, GENERATOR_WORKSPACES } from '../../generators/generator-list.js';
+import { parseIssue } from '../../lib/testing/github.js';
 
 const command: JHipsterCommandDefinition = {
-  arguments: {
+  configs: {
     issue: {
-      type: String,
+      argument: {
+        type: String,
+        description: 'GitHub issue to generate',
+      },
+      configure(gen: any) {
+        // Gets the owner, repo and issue_number from a string such as, "jhipster/generator-jhipster#12345"
+        const { owner, repository, issue } = parseIssue(gen.issue);
+        if (owner) {
+          gen.owner = owner;
+        }
+        if (repository) {
+          gen.repository = repository;
+        }
+        gen.issueNumber = issue;
+      },
+      scope: 'generator',
     },
   },
   options: {
@@ -50,6 +67,7 @@ const command: JHipsterCommandDefinition = {
       env: 'JHI_FOLDER_APP',
     },
   },
+  import: [GENERATOR_APP, GENERATOR_WORKSPACES],
 };
 
 export default command;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2023 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,13 +18,14 @@
  */
 
 import chalk from 'chalk';
-import { Command, Option } from 'commander';
-import lodash from 'lodash';
-import { convertConfigToOption } from '../lib/internal/index.mjs';
-
-const { kebabCase } = lodash;
+import { Argument, Command, Option } from 'commander';
+import { kebabCase } from 'lodash-es';
+import { convertConfigToOption } from '../lib/command/index.js';
 
 export default class JHipsterCommand extends Command {
+  configs = {};
+  blueprintConfigs = {};
+
   createCommand(name) {
     return new JHipsterCommand(name);
   }
@@ -152,7 +153,7 @@ export default class JHipsterCommand extends Command {
   /**
    * Register options using generator._options structure.
    * @param {object} options
-   * @param {string} blueprintOptionDescription - description of the blueprint that adds the option
+   * @param {string} [blueprintOptionDescription] - description of the blueprint that adds the option
    * @return {JHipsterCommand} this;
    */
   addGeneratorOptions(options, blueprintOptionDescription) {
@@ -166,7 +167,11 @@ export default class JHipsterCommand extends Command {
     Object.entries(jhipsterArguments ?? {}).forEach(([key, value]) => {
       let argName = value.type === Array ? `${key}...` : key;
       argName = value.required ? `<${argName}>` : `[${argName}]`;
-      this.argument(argName, value.description);
+      const argument = new Argument(argName, value.description);
+      if (value.choices) {
+        argument.choices(value.choices.map(choice => (typeof choice === 'string' ? choice : choice.value)));
+      }
+      this.addArgument(argument);
     });
     return this;
   }
@@ -179,12 +184,15 @@ export default class JHipsterCommand extends Command {
   }
 
   addJHipsterConfigs(configs = {}, blueprintOptionDescription) {
-    Object.entries(configs).forEach(([name, config]) => {
-      const option = convertConfigToOption(name, config);
-      if (option) {
-        this._addGeneratorOption(kebabCase(option.name), option, blueprintOptionDescription);
-      }
-    });
+    Object.assign(blueprintOptionDescription ? this.blueprintConfigs : this.configs, configs);
+    Object.entries(configs)
+      .filter(([_name, config]) => config.cli)
+      .forEach(([name, config]) => {
+        const option = convertConfigToOption(name, config);
+        if (option) {
+          this._addGeneratorOption(kebabCase(option.name), option, blueprintOptionDescription);
+        }
+      });
     return this;
   }
 
@@ -222,6 +230,9 @@ export default class JHipsterCommand extends Command {
     }
     if (optionDefinition.choices && optionDefinition.choices.length > 0) {
       option.choices(optionDefinition.choices);
+    }
+    if (optionDefinition.implies) {
+      option.implies(optionDefinition.implies);
     }
     return this.addOption(option);
   }

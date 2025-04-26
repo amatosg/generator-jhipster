@@ -33,25 +33,25 @@ export default defineComponent({
   created(): void {
     this.retrieveSessions();
   },
-  methods: {    
+  methods: {
     retrieveSessions() {
-      return axios.get('api/account/sessions/').then(response => {
+      return axios.get('api/account/sessions').then(response => {
         this.error = null;
         this.sessions = response.data;
       });
     },
     invalidate(session) {
       return axios
-        .delete('api/account/sessions/' + session)
+        .delete(`api/account/sessions/${session}`)
         .then(() => {
           this.error = null;
           this.success = 'OK';
           this.retrieveSessions();
         })
-      .catch(() => {
-        this.success = null;
-        this.error = 'ERROR';
-      });
+        .catch(() => {
+          this.success = null;
+          this.error = 'ERROR';
+        });
     },
   },
 });

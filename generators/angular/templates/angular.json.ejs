@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -48,11 +48,7 @@
 <%_ if (communicationSpringWebsocket) { _%>
               "./<%= this.relativeDir(clientRootDir, clientSrcDir) %>sockjs-client.polyfill",
 <%_ } _%>
-<%_ if (microfrontend) { _%>
-              "zone.js/dist/zone"
-<%_ } else { _%>
               "zone.js"
-<%_ } _%>
             ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
@@ -98,7 +94,13 @@
               "vendorChunk": true,
               "extractLicenses": false,
               "sourceMap": true,
-              "namedChunks": true
+              "namedChunks": true,
+              "fileReplacements": [
+                {
+                  "replace": "<%= this.relativeDir(clientRootDir, clientSrcDir) %>environments/environment.ts",
+                  "with": "<%= this.relativeDir(clientRootDir, clientSrcDir) %>environments/environment.development.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -106,15 +108,15 @@
         "serve": {
           "builder": "@angular-builders/custom-webpack:dev-server",
           "options": {
-            "browserTarget": "<%= dasherizedBaseName %>:build:development",
+            "buildTarget": "<%= dasherizedBaseName %>:build:development",
             "port": <%= devServerPort %>
           },
           "configurations": {
             "production": {
-              "browserTarget": "<%= dasherizedBaseName %>:build:production"
+              "buildTarget": "<%= dasherizedBaseName %>:build:production"
             },
             "development": {
-              "browserTarget": "<%= dasherizedBaseName %>:build:development"
+              "buildTarget": "<%= dasherizedBaseName %>:build:development"
             }
           },
           "defaultConfiguration": "development"

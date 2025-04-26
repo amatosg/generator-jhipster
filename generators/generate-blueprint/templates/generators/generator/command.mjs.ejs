@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,11 +16,25 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
-/**
- * @type {import('generator-jhipster').JHipsterCommandDefinition}
- */
-const command = {
-  options: {},
-};
+import { asCommand } from 'generator-jhipster';
+<%_ if (!sbs && !customGenerator) { _%>
+import { command as jhipsterCommand } from 'generator-jhipster/generators/<%- subGenerator %>';
+<%_ } _%>
 
-export default command;
+export default asCommand({
+<%_ if (!sbs && !customGenerator) { _%>
+  options: {
+    ...jhipsterCommand.options,
+  },
+<%_ } _%>
+  configs: {
+<%_ if (!sbs && !customGenerator) { _%>
+    ...jhipsterCommand.configs,
+<%_ } _%>
+  },
+<%_ if (!sbs && !customGenerator) { _%>
+  arguments: {
+    ...jhipsterCommand.arguments,
+  },
+<%_ } _%>
+});

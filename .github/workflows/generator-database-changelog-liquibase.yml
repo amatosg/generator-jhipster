@@ -19,10 +19,12 @@
 
 name: Incremental Changelog
 on: [workflow_call]
+env:
+  FORCE_COLOR: 2
 jobs:
   check-generator-database-changelog-liquibase:
     name: ${{ matrix.app-type }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ${{ github.workspace }}/app
@@ -46,6 +48,8 @@ jobs:
             liquibase: jdl
             environment: prod
             war: 0
+    env:
+      JHIPSTER_DEPENDENCIES_VERSION: '0.0.0-CICD'
     steps:
       #----------------------------------------------------------------------
       # Install all tools and check configuration
@@ -62,72 +66,43 @@ jobs:
           entities-sample: ${{ matrix.entity }}
           application-environment: ${{ matrix.environment }}
           application-packaging: ${{ (matrix.war == 1 && 'war') || 'jar' }}
-      - uses: actions/setup-node@v3
+      - uses: jhipster/actions/setup-runner@v0
         with:
           node-version: ${{ steps.setup.outputs.node-version }}
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
           java-version: ${{ steps.setup.outputs.java-version }}
-      - name: 'SETUP: load npm cache'
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            ~/.cache/Cypress/
-          key: ${{ runner.os }}-node-${{ steps.setup.outputs.date }}-angular-${{ hashFiles('generator-jhipster/package-lock.json', 'generator-jhipster/**/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ steps.setup.outputs.date }}-angular-
-            ${{ runner.os }}-node-${{ steps.setup.outputs.date }}-
-            ${{ runner.os }}-node-${{ steps.setup.outputs.date }}
-      - name: 'SETUP: load maven cache'
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ steps.setup.outputs.date }}-${{ hashFiles('generator-jhipster/**/pom.xml.ejs') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-${{ steps.setup.outputs.date }}-
-            ${{ runner.os }}-maven-${{ steps.setup.outputs.date }}
-      - name: 'SETUP: load gradle cache'
-        if: contains(matrix.app-type, 'gradle')
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ steps.setup.outputs.date }}-${{ hashFiles('generator-jhipster/**/build.gradle.ejs') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-${{ steps.setup.outputs.date }}-
-            ${{ runner.os }}-gradle-${{ steps.setup.outputs.date }}
-      - name: 'TOOLS: configure tools installed by the system'
-        run: $JHI_SCRIPTS/03-system.sh
-      - name: 'TOOLS: configure git'
-        run: $JHI_SCRIPTS/04-git-config.sh
+          maven-cache: true
+          binary-dir: ${{ github.workspace }}/generator-jhipster/bin
+      - run: npm ci --ignore-scripts
+        working-directory: ${{ github.workspace }}/generator-jhipster
       #----------------------------------------------------------------------
       # Install JHipster and generate project+entities
       #----------------------------------------------------------------------
-      - name: 'GENERATION: install JHipster'
-        run: $JHI_SCRIPTS/10-install-jhipster.sh
+      - uses: jhipster/actions/build-jhipster-bom@v0
+        with:
+          jhipster-bom-ref: main
       - name: 'GENERATION: config'
         run: $JHI_SCRIPTS/11-generate-config.sh
       - name: 'GENERATION: project'
         run: $JHI_SCRIPTS/12-generate-project.sh --force --creation-timestamp '2020-01-01'
         env:
           JHI_SAMPLES: ${{ github.workspace }}/generator-jhipster/test-integration/incremental-changelog-samples
+          JHI_CLI: jhipster.cjs
       - name: 'GENERATION: incremental project'
         run: $JHI_SCRIPTS/12-generate-project.sh --incremental-changelog --force
         env:
           JHI_SAMPLES: ${{ github.workspace }}/generator-jhipster/test-integration/incremental-changelog-samples
           JHI_APP: ${{ matrix.app-type }}-post
+          JHI_CLI: jhipster.cjs
       - name: 'GENERATION: incremental changes'
         run: |
           git add .
           git -c color.ui=always diff --cached
-      - name: 'GENERATION: jhipster info'
-        run: $JHI_SCRIPTS/14-jhipster-info.sh
+      - run: jhipster.cjs info
       #----------------------------------------------------------------------
       # Launch tests
       #----------------------------------------------------------------------
+      - name: 'TESTS: check liquibase:diff'
+        run: ./mvnw liquibase:diff
       - name: 'TESTS: backend'
         run: npm run ci:backend:test
       - name: 'TESTS: frontend'
@@ -140,7 +115,7 @@ jobs:
         id: e2e
         run: npm run ci:e2e:run --if-present
       - name: 'E2E: Store failure screenshots'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always() && steps.e2e.outcome == 'failure'
         with:
           name: screenshots-${{ matrix.app-type }}

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -29,7 +29,7 @@ describe('Axios Interceptor', () => {
 
     it('onRequestSuccess is called on fulfilled request', () => {
       expect((client.interceptors.request as any).handlers[0].fulfilled({ data: 'foo', url: '/test' })).toMatchObject({
-        data: 'foo'
+        data: 'foo',
       });
     });
     it('onResponseSuccess is called on fulfilled response', () => {
@@ -39,13 +39,12 @@ describe('Axios Interceptor', () => {
       const rejectError = {
         response: {
           statusText: 'NotFound',
-          status: 403,
-          data: { message: 'Page not found' }
-        }
+          status: 401,
+          data: { message: 'Page not found' },
+        },
       };
       expect((client.interceptors.response as any).handlers[0].rejected(rejectError)).rejects.toEqual(rejectError);
       expect(onUnauthenticated.calledOnce).toBe(true);
     });
   });
 });
-

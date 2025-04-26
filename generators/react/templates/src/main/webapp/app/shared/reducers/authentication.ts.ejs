@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -45,7 +45,7 @@ export const initialState = {
   logoutUrl: null as unknown as string,
 };
 
-export type AuthenticationState =  Readonly<typeof initialState>;
+export type AuthenticationState = Readonly<typeof initialState>;
 
 // Actions
 
@@ -86,9 +86,13 @@ interface IAuthParams {
   rememberMe?: boolean;
 }
 
-export const authenticate = createAsyncThunk('authentication/login', async (auth: IAuthParams) => axios.post<any>('api/authenticate', auth), {
-  serializeError: serializeAxiosError,
-});
+export const authenticate = createAsyncThunk(
+  'authentication/login',
+  async (auth: IAuthParams) => axios.post<any>('api/authenticate', auth),
+  {
+    serializeError: serializeAxiosError,
+  },
+);
 
 export const login: (username: string, password: string, rememberMe?: boolean) => AppThunk =
   (username, password, rememberMe = false) =>

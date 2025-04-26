@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -31,16 +31,18 @@ describe('SubGenerator <%= subGenerator %> of <%= application.baseName %> JHipst
   describe('run', () => {
     beforeAll(async function() {
       await helpers
+<%_ if (subGenerator === 'jdl') { _%>
+        .runJDL('application { }')
+<%_ } else { _%>
         .run(<%= customGenerator ? 'SUB_GENERATOR_NAMESPACE' : 'BLUEPRINT_NAMESPACE' %>)
+<%_ } _%>
         .withJHipsterConfig()
         .withOptions({
           ignoreNeedlesError: true,
-<%_ if (!customGenerator) { _%>
-          blueprint: '<%= application.baseName %>',
-<%_ } _%>
         })
-        .withJHipsterLookup()
-        .withParentBlueprintLookup();
+        .withJHipsterGenerators()
+        .withConfiguredBlueprint()
+        .withBlueprintConfig();
     });
 
     it('should succeed', () => {

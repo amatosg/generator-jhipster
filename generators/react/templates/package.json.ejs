@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -26,6 +26,7 @@
     "node_modules"
   ],
   "dependencies": {
+    "@eslint/js": null,
     "@fortawesome/fontawesome-svg-core": "<%= nodeDependencies['@fortawesome/fontawesome-svg-core'] %>",
     "@fortawesome/free-solid-svg-icons": "<%= nodeDependencies['@fortawesome/free-solid-svg-icons'] %>",
     "@fortawesome/react-fontawesome": "<%= nodeDependencies['@fortawesome/react-fontawesome'] %>",
@@ -45,23 +46,17 @@
     "react-loadable": "<%= nodeDependencies['react-loadable'] %>",
     "react-redux": "<%= nodeDependencies['react-redux'] %>",
     "react-redux-loading-bar": "<%= nodeDependencies['react-redux-loading-bar'] %>",
+    "react-router": "<%= nodeDependencies['react-router-dom'] %>",
     "react-router-dom": "<%= nodeDependencies['react-router-dom'] %>",
     "react-toastify": "<%= nodeDependencies['react-toastify'] %>",
     "react-transition-group": "<%= nodeDependencies['react-transition-group'] %>",
     "reactstrap": "<%= nodeDependencies['reactstrap'] %>",
     "redux": "<%= nodeDependencies['redux'] %>",
-    "redux-thunk": "<%= nodeDependencies['redux-thunk'] %>",
-<%_ if (communicationSpringWebsocket) { _%>
-    "rxjs": "6.6.3",
-    "sockjs-client": "1.5.0",
-<%_ } _%>
 <%_ if (skipServer) { _%>
     "sonar-scanner": "<%= nodeDependencies['sonar-scanner'] %>",
 <%_ } _%>
     "tslib": "<%= nodeDependencies['tslib'] %>",
-    "uuid": "<%= nodeDependencies['uuid'] %>"<% if (communicationSpringWebsocket) { %>,
-    "webstomp-client": "1.2.6"
-    <%_ } _%>
+    "uuid": "<%= nodeDependencies['uuid'] %>"
   },
   "devDependencies": {
     "@testing-library/react": "<%= nodeDependencies['@testing-library/react'] %>",
@@ -73,8 +68,6 @@
     "@types/react-redux": "<%= nodeDependencies['@types/react-redux'] %>",
     "@types/redux": "<%= nodeDependencies['@types/redux'] %>",
     "@types/webpack-env": "<%= nodeDependencies['@types/webpack-env'] %>",
-    "@typescript-eslint/eslint-plugin": "<%= nodeDependencies['@typescript-eslint/eslint-plugin'] %>",
-    "@typescript-eslint/parser": "<%= nodeDependencies['@typescript-eslint/parser'] %>",
     "autoprefixer": "<%= nodeDependencies['autoprefixer'] %>",
     "browser-sync": "<%= nodeDependencies['browser-sync'] %>",
     "browser-sync-webpack-plugin": "<%= nodeDependencies['browser-sync-webpack-plugin'] %>",
@@ -85,6 +78,7 @@
     "css-minimizer-webpack-plugin": "<%= nodeDependencies['css-minimizer-webpack-plugin'] %>",
     "eslint": "<%= nodeDependencies['eslint'] %>",
     "eslint-config-prettier": "<%= nodeDependencies['eslint-config-prettier'] %>",
+    "eslint-plugin-prettier": "<%= nodeDependencies['eslint-plugin-prettier'] %>",
     "eslint-plugin-react": "<%= nodeDependencies['eslint-plugin-react'] %>",
     "eslint-webpack-plugin": "<%= nodeDependencies['eslint-webpack-plugin'] %>",
     "fork-ts-checker-webpack-plugin": "<%= nodeDependencies['fork-ts-checker-webpack-plugin'] %>",
@@ -92,6 +86,7 @@
     "identity-obj-proxy": "<%= nodeDependencies['identity-obj-proxy'] %>",
     "jest": "<%= nodeDependencies['jest'] %>",
     "jest-environment-jsdom": "<%= nodeDependencies['jest-environment-jsdom'] %>",
+    "jest-fixed-jsdom": "<%= nodeDependencies['jest-fixed-jsdom'] %>",
     "jest-junit": "<%= nodeDependencies['jest-junit'] %>",
     "jest-sonar": "<%= nodeDependencies['jest-sonar'] %>",
     "json-loader": "<%= nodeDependencies['json-loader'] %>",
@@ -123,6 +118,7 @@
     "cypress": "<%= nodeDependencies['cypress'] %>",
 <%_ } _%>
     "typescript": "<%= nodeDependencies['typescript'] %>",
+    "typescript-eslint": "<%= nodeDependencies['typescript-eslint'] %>",
     "webpack": "<%= nodeDependencies['webpack'] %>",
     "webpack-cli": "<%= nodeDependencies['webpack-cli'] %>",
     "webpack-dev-server": "<%= nodeDependencies['webpack-dev-server'] %>",
@@ -137,9 +133,7 @@
     "default_environment": "prod"
   },
   "scripts": {
-    "prettier:check": "prettier --check \"{,src/**/,webpack/,.blueprint/**/}*.{<%= prettierExtensions %>}\"",
-    "prettier:format": "prettier --write \"{,src/**/,webpack/,.blueprint/**/}*.{<%= prettierExtensions %>}\"",
-    "lint": "eslint . --ext .js,.ts,.jsx,.tsx",
+    "lint": "eslint .",
     "lint:fix": "<%= clientPackageManager %> run lint -- --fix",
     "cleanup": "rimraf <%= this.relativeDir(clientRootDir, temporaryDir) %>",
     "clean-www": "rimraf <%= this.relativeDir(clientRootDir, clientDistDir) %>",
@@ -148,7 +142,7 @@
     "jest": "jest --coverage --logHeapUsage --maxWorkers=2 --config jest.conf.js",
     "jest:update": "<%= clientPackageManager %> run jest -- --updateSnapshot",
     "start": "<%= clientPackageManager %> run webapp:dev --",
-    "start-tls": "<%= clientPackageManager %> run webapp:dev -- --env.tls",
+    "start-tls": "<%= clientPackageManager %> run webapp:dev -- --env tls",
 <%_ if (skipServer) { _%>
     "sonar": "sonar-scanner",
 <%_ } _%>

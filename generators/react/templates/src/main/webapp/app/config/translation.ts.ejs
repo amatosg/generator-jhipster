@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -24,7 +24,7 @@ TranslatorContext.setDefaultLocale('<%= nativeLanguage %>');
 TranslatorContext.setRenderInnerTextForMissingKeys(false);
 
 export const languages: any = {
-  <%_ languagesDefinition.forEach((ln, i) => { _%>
+  <%_ languagesDefinition.forEach((ln) => { _%>
   '<%= ln.languageTag %>': { name: '<%= ln.displayName %>', rtl: <%= ln.rtl %> },
   <%_ }); _%>
   // jhipster-needle-i18n-language-key-pipe - JHipster will add/remove languages in this object
@@ -34,6 +34,10 @@ export const locales = Object.keys(languages).sort();
 
 <%_ if (enableI18nRTL) { _%>
 export const isRTL = (lang: string): boolean => languages[lang] && languages[lang].rtl;
+
+export const setTextDirection = (lang: string) => {
+  document.querySelector('html').setAttribute('dir', isRTL(lang) ? 'rtl' : 'ltr');
+};
 <%_ } _%>
 
 export const registerLocale = store => {

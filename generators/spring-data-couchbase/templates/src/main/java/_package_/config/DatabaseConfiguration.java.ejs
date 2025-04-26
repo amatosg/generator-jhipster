@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -82,7 +82,7 @@ public class DatabaseConfiguration extends AbstractCouchbaseConfiguration {
     private static final String CHANGELOG_COLLECTION = "changelog";
     private static final String TYPE_KEY = "type";
 
-    private final Logger log = LoggerFactory.getLogger(DatabaseConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DatabaseConfiguration.class);
 
     private final JHipsterProperties jHipsterProperties;
     private final CouchbaseProperties couchbaseProperties;
@@ -158,16 +158,9 @@ public class DatabaseConfiguration extends AbstractCouchbaseConfiguration {
         return new CouchbaseCustomConversions(converters);
     }
 
-    @Override
-    public MappingCouchbaseConverter mappingCouchbaseConverter(CouchbaseMappingContext couchbaseMappingContext, CouchbaseCustomConversions couchbaseCustomConversions) {
-        MappingCouchbaseConverter mappingCouchbaseConverter = super.mappingCouchbaseConverter(couchbaseMappingContext, couchbaseCustomConversions);
-        ((GenericConversionService) mappingCouchbaseConverter.getConversionService()).addConverter(StringToObjectConverter.INSTANCE);
-        return mappingCouchbaseConverter;
-    }
-
     @Bean
     public Couchmove couchmove(Cluster cluster) {
-        log.debug("Configuring Couchmove");
+        LOG.debug("Configuring Couchmove");
         Bucket bucket = cluster.bucket(getBucketName());
         Collection collection = bucket.scope(getScopeName()).collection(CHANGELOG_COLLECTION);
         Couchmove couchmove = new Couchmove(collection, cluster, "config/couchmove/changelog");
@@ -306,19 +299,5 @@ public class DatabaseConfiguration extends AbstractCouchbaseConfiguration {
             return source == null ? null : UUID.fromString(source);
         }
 
-    }
-
-    public enum StringToObjectConverter implements GenericConverter {
-        INSTANCE;
-
-        @Override
-        public Set<ConvertiblePair> getConvertibleTypes() {
-            return Collections.singleton(new ConvertiblePair(String.class, Object.class));
-        }
-
-        @Override
-        public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
-            return null;
-        }
     }
 }

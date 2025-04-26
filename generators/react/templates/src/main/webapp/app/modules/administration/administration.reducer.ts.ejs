@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -25,14 +25,14 @@ import { AppThunk } from 'app/config/store';
 const initialState = {
   loading: false,
   errorMessage: null,
-<%_ if (applicationTypeGateway && serviceDiscoveryAny) { _%>
+<%_ if (applicationTypeGateway && gatewayServicesApiAvailable) { _%>
   gateway: {
     routes: []
   },
 <%_ } _%>
 <%_ if (withAdminUi) { _%>
   logs: {
-    loggers: [] as any[]
+    loggers: [] as any[],
   },
   health: {} as any,
   metrics: {} as any,
@@ -53,7 +53,7 @@ const initialState = {
 export type AdministrationState =  Readonly<typeof initialState>;
 
 // Actions
-<%_ if (applicationTypeGateway && serviceDiscoveryAny) { _%>
+<%_ if (applicationTypeGateway && gatewayServicesApiAvailable) { _%>
 export const getGatewayRoutes = createAsyncThunk('administration/fetch_gateway_route', async () => axios.get<any>('api/gateway/routes'), {
   serializeError: serializeAxiosError,
 });
@@ -68,9 +68,13 @@ export const getSystemMetrics = createAsyncThunk('administration/fetch_metrics',
   serializeError: serializeAxiosError,
 });
 
-export const getSystemThreadDump = createAsyncThunk('administration/fetch_thread_dump', async () => axios.get<any>('management/threaddump'), {
-  serializeError: serializeAxiosError,
-});
+export const getSystemThreadDump = createAsyncThunk(
+  'administration/fetch_thread_dump',
+  async () => axios.get<any>('management/threaddump'),
+  {
+    serializeError: serializeAxiosError,
+  },
+);
 
 export const getLoggers = createAsyncThunk('administration/fetch_logs', async () => axios.get<any>('management/loggers'), {
   serializeError: serializeAxiosError,
@@ -81,7 +85,7 @@ export const setLoggers = createAsyncThunk(
   async ({ name, configuredLevel }: any) => axios.post(`management/loggers/${name}`, { configuredLevel }),
   {
     serializeError: serializeAxiosError,
-  }
+  },
 );
 
 export const changeLogLevel: (name, configuredLevel) => AppThunk = (name, configuredLevel) => async dispatch => {
@@ -89,9 +93,13 @@ export const changeLogLevel: (name, configuredLevel) => AppThunk = (name, config
   dispatch(getLoggers());
 };
 
-export const getConfigurations = createAsyncThunk('administration/fetch_configurations', async () => axios.get<any>('management/configprops'), {
-  serializeError: serializeAxiosError,
-});
+export const getConfigurations = createAsyncThunk(
+  'administration/fetch_configurations',
+  async () => axios.get<any>('management/configprops'),
+  {
+    serializeError: serializeAxiosError,
+  },
+);
 
 export const getEnv = createAsyncThunk('administration/fetch_env', async () => axios.get<any>('management/env'), {
   serializeError: serializeAxiosError,
@@ -113,9 +121,9 @@ export const AdministrationSlice = createSlice({
     <%_ } _%>
   },
   extraReducers(builder) {
-<%_ if (withAdminUi || (applicationTypeGateway && serviceDiscoveryAny)) { _%>
+<%_ if (withAdminUi || (applicationTypeGateway && gatewayServicesApiAvailable)) { _%>
     builder
-      <%_ if (applicationTypeGateway && serviceDiscoveryAny) { _%>
+      <%_ if (applicationTypeGateway && gatewayServicesApiAvailable) { _%>
       .addCase(getGatewayRoutes.fulfilled, (state, action) => {
         state.loading = false;
         state.gateway = {
@@ -159,7 +167,7 @@ export const AdministrationSlice = createSlice({
       <%_ } _%>
       .addMatcher(
         isPending(
-          <%_ if (applicationTypeGateway && serviceDiscoveryAny) { _%>
+          <%_ if (applicationTypeGateway && gatewayServicesApiAvailable) { _%>
           getGatewayRoutes,
           <%_ } _%>
           <%_ if (withAdminUi) { _%>
@@ -178,7 +186,7 @@ export const AdministrationSlice = createSlice({
       )
       .addMatcher(
         isRejected(
-          <%_ if (applicationTypeGateway && serviceDiscoveryAny) { _%>
+          <%_ if (applicationTypeGateway && gatewayServicesApiAvailable) { _%>
           getGatewayRoutes,
           <%_ } _%>
           <%_ if (withAdminUi) { _%>
@@ -193,7 +201,7 @@ export const AdministrationSlice = createSlice({
         (state, action) => {
           state.errorMessage = action.error.message;
           state.loading = false;
-        }
+        },
       );
 <%_ } _%>
   },

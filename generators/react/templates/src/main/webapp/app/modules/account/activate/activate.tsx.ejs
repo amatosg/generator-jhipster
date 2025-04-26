@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -31,7 +31,8 @@ const successAlert = (
     </Translate>
     <Link to="/login" className="alert-link">
       <Translate contentKey="global.messages.info.authenticated.link">sign in</Translate>
-    </Link>.
+    </Link>
+    .
   </Alert>
 );
 
@@ -49,7 +50,7 @@ export const ActivatePage = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const key = searchParams.get("key");
+    const key = searchParams.get('key');
 
     dispatch(activateAction(key));
     return () => {

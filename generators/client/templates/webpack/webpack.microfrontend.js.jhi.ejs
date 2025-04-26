@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -20,36 +20,60 @@
  // Register sections and max allowed fragments, 0 for unlimited.
  fragments.registerSections({
    importsSection:0,
+   configSection: 0,
    moduleFederationSection: 0,
    pluginsSection: 0,
  });
 _&>
 
-const ModuleFederationPlugin = require('webpack/lib/container/ModuleFederationPlugin');
+const { ModuleFederationPlugin } = require('@module-federation/enhanced/webpack');
 <&- fragments.importsSection() &>
+<%_ if (!clientFrameworkVue) { _%>
 const packageJson = require('../package.json');
-const appVersion = packageJson.version;
+// Microfrontend api, should match across gateway and microservices.
+const apiVersion = '0.0.1';
 
-module.exports = ({ serve }) => {
+const sharedDefaults = { singleton: true, strictVersion: true, requiredVersion: apiVersion };
+const shareMappings = (...mappings) => Object.fromEntries(mappings.map(map => [map, { ...sharedDefaults, version: apiVersion }]));
+
+const shareDependencies = ({ skipList = [] } = {}) =>
+  Object.fromEntries(
+    Object.entries(packageJson.dependencies)
+      .filter(([dependency]) => !skipList.includes(dependency))
+      .map(([dependency, version]) => [dependency, { ...sharedDefaults, version, requiredVersion: version }]),
+  );
+<%_ } _%>
+
+module.exports = () => {
   return {
     optimization: {
       moduleIds: 'named',
       chunkIds: 'named',
       runtimeChunk: false,
     },
+<&- fragments.configSection() &>
     plugins: [
-      new ModuleFederationPlugin({
-<%_ if (applicationTypeMicroservice) { _%>
+      new ModuleFederationPlugin(
+<%_ if (clientFrameworkVue) { _%>
+        require('../module-federation.config.cjs'),
+<%_ } else { -%>
+        {
+  <%_ if (applicationTypeMicroservice) { _%>
         name: '<%= lowercaseBaseName %>',
         filename: 'remoteEntry.js',
-<%_ } _%>
+  <%_ } _%>
         shareScope: 'default',
+        dts: false,
+        manifest: false,
 <&- fragments.moduleFederationSection() &>
-      }),
+      }
+<%_ } -%>
+      ),
 <&- fragments.pluginsSection() &>
     ],
     output: {
       publicPath: 'auto',
+      scriptType: 'text/javascript',
     },
   };
 };

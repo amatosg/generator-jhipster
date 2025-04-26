@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2023 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,7 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { JHipsterCommandDefinition } from '../../generators/base/api.mjs';
+import { join } from 'node:path';
+import process from 'node:process';
+import { defaultSamplesFolder } from '../constants.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
+import { GENERATOR_APP, GENERATOR_WORKSPACES } from '../../generators/generator-list.js';
 
 const command: JHipsterCommandDefinition = {
   arguments: {
@@ -24,19 +28,54 @@ const command: JHipsterCommandDefinition = {
       type: String,
     },
   },
-  options: {
+  configs: {
+    entitiesSample: {
+      cli: {
+        type: String,
+        description: 'Entities sample to copy',
+      },
+      configure: (gen: any) => {
+        if (['mongodb', 'couchbase'].includes(gen.entitiesSample)) {
+          gen.entitiesSample = 'document';
+        }
+      },
+      choices: ['sql', 'sqllight', 'micro', 'sqlfull', 'none', 'neo4j', 'mongodb', 'document', 'cassandra', 'couchbase'],
+      scope: 'generator',
+    },
     global: {
-      type: Boolean,
-      description: 'Generate in global samples folder',
+      cli: {
+        type: Boolean,
+        description: 'Generate in global samples folder',
+      },
+      configure: (gen: any) => {
+        if (gen.global && !gen.projectFolder) {
+          gen.projectFolder = join(gen._globalConfig.get('samplesFolder') ?? defaultSamplesFolder, gen.sampleName);
+        }
+      },
       scope: 'generator',
     },
     projectFolder: {
-      type: String,
-      description: 'Folder to generate the sample',
+      cli: {
+        type: String,
+        description: 'Folder to generate the sample',
+        env: 'JHI_FOLDER_APP',
+      },
+      configure: (gen: any) => {
+        if (!gen.projectFolder) {
+          gen.projectFolder = process.cwd();
+        }
+      },
       scope: 'generator',
-      env: 'JHI_FOLDER_APP',
     },
   },
+  options: {
+    sampleYorcFolder: {
+      type: Boolean,
+      description: 'Treat sample arg as .yo-rc.json folder path',
+      scope: 'generator',
+    },
+  },
+  import: [GENERATOR_APP, GENERATOR_WORKSPACES],
 };
 
 export default command;

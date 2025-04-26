@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -30,26 +30,25 @@ const MergeJsonWebpackPlugin = require('merge-jsons-webpack-plugin');
 const utils = require('./utils.js');
 const environment = require('./environment');
 
-const getTsLoaderRule = env => {
-  const rules = [
+const getTsLoaderRule = () => {
+  return [
     {
       loader: 'thread-loader',
       options: {
         // There should be 1 cpu for the fork-ts-checker-webpack-plugin.
         // The value may need to be adjusted (e.g. to 1) in some CI environments,
         // as cpus() may report more cores than what are available to the build.
-        workers: require('os').cpus().length - 1
-      }
+        workers: require('os').cpus().length - 1,
+      },
     },
     {
       loader: 'ts-loader',
       options: {
         transpileOnly: true,
-        happyPackMode: true
-      }
-    }
+        happyPackMode: true,
+      },
+    },
   ];
-  return rules;
 };
 
 module.exports = async options => {
@@ -127,11 +126,8 @@ return merge(
       SERVER_API_URL: JSON.stringify(environment.SERVER_API_URL),
     }),
     new ESLintPlugin({
-      baseConfig: {
-        parserOptions: {
-          project: ['../tsconfig.json'],
-        },
-      },
+      configType: 'flat',
+      extensions: ['ts', 'tsx'],
     }),
     new ForkTsCheckerWebpackPlugin(),
     new CopyWebpackPlugin({

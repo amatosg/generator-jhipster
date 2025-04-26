@@ -8,9 +8,13 @@
     },
     {
       "name": "ng-default-additional",
+      "job-name": "ng-default-additional-esbuild",
       "entity": "none",
       "app-sample": "ng-default",
-      "jdl-entity": "*"
+      "jdl-entity": "*",
+      "generatorOptions": {
+        "clientBundler": "experimentalEsbuild"
+      }
     },
     {
       "name": "ng-mysql-es-noi18n-mapsid",
@@ -21,23 +25,25 @@
       "name": "ng-mongodb-kafka-cucumber",
       "app-sample": "ng-mongodb-kafka-cucumber",
       "entity": "mongodb",
-      "environment": "dev"
+      "generatorOptions": {
+        "defaultEnvironment": "dev"
+      }
     },
     {
       "name": "ng-h2mem-ws-nol2",
       "app-sample": "ng-h2mem-ws-nol2",
       "entity": "sql",
-      "environment": "dev"
+      "generatorOptions": {
+        "defaultEnvironment": "dev"
+      }
     },
     {
       "name": "ng-couchbase",
-      "disabled": "needs adjusts for sb3",
       "app-sample": "ng-couchbase",
       "entity": "couchbase"
     },
     {
       "name": "ng-gradle-couchbase-search",
-      "disabled": "needs adjusts for sb3",
       "app-sample": "ng-gradle-couchbase-search",
       "entity": "couchbase"
     },
@@ -50,25 +56,28 @@
       "name": "ng-gradle-mariadb-oauth2-infinispan",
       "app-sample": "ng-gradle-mariadb-oauth2-infinispan",
       "entity": "sql",
-      "environment": "dev"
+      "generatorOptions": {
+        "defaultEnvironment": "dev"
+      }
     },
     {
       "name": "ng-gradle-h2disk-ws-nocache",
       "app-sample": "ng-gradle-h2disk-ws-nocache",
       "entity": "sql",
-      "environment": "dev",
-      "packaging": "war",
-      "testcontainers": "false"
+      "generatorOptions": {
+        "defaultEnvironment": "dev",
+        "defaultPackaging": "war"
+      }
     },
     {
       "name": "ng-webflux-mongodb",
-      "skip-backend-tests": "mongodb's reactive driver deadlocks with junit tests",
+      "job-name": "ng-webflux-mongodb-esbuild",
       "app-sample": "webflux-mongodb",
       "entity": "mongodb"
     },
     {
       "name": "ng-webflux-gradle-mongodb-oauth2",
-      "skip-backend-tests": "mongodb's reactive driver deadlocks with junit tests",
+      "job-name": "ng-webflux-gradle-mongodb-oauth2-esbuild",
       "app-sample": "webflux-mongodb-oauth2",
       "entity": "mongodb"
     },
@@ -83,33 +92,42 @@
     },
     {
       "name": "ng-webflux-gradle-session-h2mem-es",
+      "job-name": "ng-webflux-gradle-session-h2mem-es-esbuild",
       "app-sample": "webflux-gradle-session-h2mem-es",
-      "environment": "dev",
+      "generatorOptions": {
+        "defaultEnvironment": "dev"
+      },
       "entity": "sqllight"
     },
     {
       "name": "ng-webflux-couchbase",
-      "disabled": "needs adjusts for sb3",
       "app-sample": "webflux-couchbase",
       "entity": "couchbase"
     },
     {
-      "name": "ms-ng-consul-oauth2-mongodb-caffeine",
-      "jdl-samples": "ms-ng-consul-oauth2-mongodb-caffeine",
-      "extra-args": "--workspaces --monorepository",
-      "workspaces": "true"
+      "name": "ms-ng-oauth2-mongodb-caffeine",
+      "jdl-samples": "ms-ng-oauth2-mongodb-caffeine",
+      "generatorOptions": {
+        "workspaces": true,
+        "experimental": true,
+        "monorepository": true
+      }
     },
     {
       "name": "mf-ng-eureka-jwt-psql-ehcache",
       "jdl-samples": "mf-ng-eureka-jwt-psql-ehcache",
-      "extra-args": "--workspaces --monorepository",
-      "workspaces": "true"
+      "generatorOptions": {
+        "workspaces": true,
+        "monorepository": true
+      }
     },
     {
       "name": "ms-mf-ng-consul-oauth2-neo4j",
       "jdl-samples": "ms-mf-ng-consul-oauth2-neo4j",
-      "extra-args": "--workspaces --monorepository",
-      "workspaces": "true"
+      "generatorOptions": {
+        "workspaces": true,
+        "monorepository": true
+      }
     }
   ]
 }

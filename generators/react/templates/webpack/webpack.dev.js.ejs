@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,7 +16,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
-const webpack = require('webpack');
 const webpackMerge = require('webpack-merge').merge;
 const BrowserSyncPlugin = require('browser-sync-webpack-plugin');
 const SimpleProgressWebpackPlugin = require('simple-progress-webpack-plugin');
@@ -86,10 +85,12 @@ module.exports = async (options) => webpackMerge(await commonConfig({ env: ENV }
         '/services',
         '/management',
         '/v3/api-docs',
-        '/h2-console',<% if (authenticationTypeOauth2) { %>
+        '/h2-console',
+<%_ if (authenticationTypeOauth2) { _%>
+        '/auth',
         '/oauth2',
-        '/login',<% } %>
-        '/auth'
+        '/login',
+<%_ } _%>
       ],
       target: `http${options.tls ? 's' : ''}://localhost:<%= applicationTypeMicroservice ? gatewayServerPort : serverPort %>`,
       secure: false,
@@ -101,7 +102,6 @@ module.exports = async (options) => webpackMerge(await commonConfig({ env: ENV }
       target: 'ws://127.0.0.1:<%= applicationTypeMicroservice ? gatewayServerPort : serverPort %>',
       ws: true
     }<% } %>],
-    https: options.tls,
     historyApiFallback: true
   },
   stats: process.env.JHI_DISABLE_WEBPACK_LOGS ? 'none' : options.stats,
@@ -115,12 +115,12 @@ module.exports = async (options) => webpackMerge(await commonConfig({ env: ENV }
       {
         https: options.tls,
         host: 'localhost',
-        port: 9000,
+        port: <%- devServerPortProxy %>,
         proxy: {
           target: `http${options.tls ? 's' : ''}://localhost:${options.watch ? '<%= applicationTypeMicroservice ? gatewayServerPort : serverPort %>' : '<%= devServerPort %>'}`,
           ws: true,
           proxyOptions: {
-              changeOrigin: false  //pass the Host header to the backend unchanged  https://github.com/Browsersync/browser-sync/issues/430
+              changeOrigin: false  //pass the Host header to the backend unchanged https://github.com/Browsersync/browser-sync/issues/430
           }
       },
       socket: {

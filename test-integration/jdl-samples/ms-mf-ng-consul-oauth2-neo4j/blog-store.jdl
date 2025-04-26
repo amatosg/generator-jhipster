@@ -53,6 +53,7 @@ application {
     serverPort 8081
     serviceDiscoveryType consul
     testFrameworks [cypress]
+    feignClient true
   }
   entities Blog, Post, Tag
 }
@@ -74,6 +75,7 @@ application {
     packageName com.okta.developer.store
     serverPort 8082
     serviceDiscoveryType consul
+    feignClient true
   }
   entities Product
 }
@@ -102,7 +104,7 @@ application {
 
 @ChangelogDate(20210408164809)
 entity UserData {
-  address String
+  address String required
 }
 
 @ChangelogDate(20210408164810)
@@ -135,12 +137,13 @@ relationship OneToOne {
 */
 
 @ChangelogDate(20210408164814)
+@AdminEntity
 entity Notification {
   title String required
 }
 
 relationship ManyToOne {
-  Post{blog(name)} to Blog
+  Post{blog(name) required} to Blog{posts}
 }
 
 relationship ManyToMany {
@@ -152,7 +155,6 @@ paginate Product with pagination
 
 service Product with serviceClass
 service Notification with serviceImpl
-dto Blog, Post, Tag, Notification with mapstruct
 
 microservice Product with store
 

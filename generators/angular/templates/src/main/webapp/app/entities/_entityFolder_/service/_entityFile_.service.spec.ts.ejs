@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,11 +17,11 @@
  limitations under the License.
 -%>
 <%_
-const tsKeyId = this.generateTestEntityId(primaryKey.type);
-const enumImports = this.generateEntityClientEnumImports(fields);
+const tsKeyId = primaryKey.tsSampleValues[0];
 _%>
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 
 <%_ if (anyFieldIsLocalDate) { _%>
 import { DATE_FORMAT } from 'app/config/input.constants';
@@ -49,8 +49,9 @@ describe('<%= entityAngularName %> Service', () => {
 
     beforeEach(() => {
         TestBed.configureTestingModule({
-            imports: [
-                HttpClientTestingModule
+            providers: [
+                provideHttpClient(),
+                provideHttpClientTesting()
             ]
         });
         expectedResult = null;
@@ -82,6 +83,8 @@ describe('<%= entityAngularName %> Service', () => {
             req.flush(returnedFromService);
             expect(expectedResult).toMatchObject(expected);
         });
+<%_ } _%>
+<%_ if (!readOnly && updatableEntity) { _%>
 
         it('should update a <%= entityAngularName %>', () => {
             const <%= entityInstance %> = { ...sampleWithRequiredData };
@@ -205,7 +208,7 @@ describe('<%= entityAngularName %> Service', () => {
         });
 
         describe('compare<%= entityAngularName %>', () => {
-            it('Should return true if both entities are null', () => {
+            it('should return true if both entities are null', () => {
                 const entity1 = null;
                 const entity2 = null;
 
@@ -214,8 +217,8 @@ describe('<%= entityAngularName %> Service', () => {
                 expect(compareResult).toEqual(true);
             });
 
-            it('Should return false if one entity is null', () => {
-                const entity1 = <%- this.generateTestEntityPrimaryKey(primaryKey, 0) %>;
+            it('should return false if one entity is null', () => {
+                const entity1 = <%- tsPrimaryKeySamples[0] %>;
                 const entity2 = null;
 
                 const compareResult1 = service.compare<%= entityAngularName %>(entity1, entity2);
@@ -225,9 +228,9 @@ describe('<%= entityAngularName %> Service', () => {
                 expect(compareResult2).toEqual(false);
             });
 
-            it('Should return false if primaryKey differs', () => {
-                const entity1 = <%- this.generateTestEntityPrimaryKey(primaryKey, 0) %>;
-                const entity2 = <%- this.generateTestEntityPrimaryKey(primaryKey, 1) %>;
+            it('should return false if primaryKey differs', () => {
+                const entity1 = <%- tsPrimaryKeySamples[0] %>;
+                const entity2 = <%- tsPrimaryKeySamples[1] %>;
 
                 const compareResult1 = service.compare<%= entityAngularName %>(entity1, entity2);
                 const compareResult2 = service.compare<%= entityAngularName %>(entity2, entity1);
@@ -236,9 +239,9 @@ describe('<%= entityAngularName %> Service', () => {
                 expect(compareResult2).toEqual(false);
             });
 
-            it('Should return false if primaryKey matches', () => {
-                const entity1 = <%- this.generateTestEntityPrimaryKey(primaryKey, 0) %>;
-                const entity2 = <%- this.generateTestEntityPrimaryKey(primaryKey, 0) %>;
+            it('should return false if primaryKey matches', () => {
+                const entity1 = <%- tsPrimaryKeySamples[0] %>;
+                const entity2 = <%- tsPrimaryKeySamples[0] %>;
 
                 const compareResult1 = service.compare<%= entityAngularName %>(entity1, entity2);
                 const compareResult2 = service.compare<%= entityAngularName %>(entity2, entity1);

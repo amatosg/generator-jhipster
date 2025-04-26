@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -29,18 +29,18 @@
 
   const componentName = entityAngularName + 'Component';
 _%>
-import { Component, OnInit } from '@angular/core';
+import { Component, computed, effect, NgZone, inject, OnInit, signal, WritableSignal } from '@angular/core';
 <%_ if (!paginationNo) { _%>
 import { HttpHeaders } from '@angular/common/http';
 <%_ } _%>
 import { ActivatedRoute, Data, ParamMap, Router, RouterModule } from '@angular/router';
-import { combineLatest<%_ if (!readOnly) { _%>, filter<%_ } _%>, Observable, switchMap, tap } from 'rxjs';
+import { combineLatest<%_ if (!readOnly) { _%>, filter<%_ } _%>, Observable, Subscription, tap } from 'rxjs';
 <%_ if (!readOnly) { _%>
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 <%_ } _%>
 
 import SharedModule from 'app/shared/shared.module';
-import { SortDirective, SortByDirective } from 'app/shared/sort';
+import { sortStateSignal, SortDirective, SortByDirective, type SortState, SortService } from 'app/shared/sort';
 import { DurationPipe, FormatMediumDatetimePipe, FormatMediumDatePipe } from 'app/shared/date';
 <%_ if (paginationPagination) { _%>
 import { ItemCountComponent } from 'app/shared/pagination';
@@ -61,8 +61,6 @@ import {
 } from 'app/config/pagination.constants';
 <%_ } _%>
 import {
-  ASC,
-  DESC,
   SORT,
 <%_ if (!readOnly) { _%>
   ITEM_DELETED_EVENT,
@@ -82,15 +80,11 @@ import { ParseLinks } from 'app/core/util/parse-links.service';
 <%_ if (jpaMetamodelFiltering && paginationPagination) { _%>
 import { FilterComponent, FilterOptions, IFilterOptions, IFilterOption } from 'app/shared/filter';
 <%_ } _%>
-<%_ if (paginationNo) { _%>
-import { SortService } from 'app/shared/sort/sort.service';
-<%_ } _%>
 <%_ if (paginationInfiniteScroll) { _%>
-import { InfiniteScrollModule } from 'ngx-infinite-scroll';
+import { InfiniteScrollDirective } from 'ngx-infinite-scroll';
 <%_ } _%>
 
 @Component({
-    standalone: true,
     selector: '<%= jhiPrefixDashed %>-<%= entityFileName %>',
     templateUrl: './<%= entityFileName %>.component.html',
     imports: [
@@ -101,9 +95,15 @@ import { InfiniteScrollModule } from 'ngx-infinite-scroll';
       SharedModule,
       SortDirective,
       SortByDirective,
+<%_ if (anyFieldIsDuration) { _%>
       DurationPipe,
+<%_ } _%>
+<%_ if (anyFieldIsTimeDerived) { _%>
       FormatMediumDatetimePipe,
+<%_ } _%>
+<%_ if (anyFieldIsLocalDate) { _%>
       FormatMediumDatePipe,
+<%_ } _%>
 <%_ if (jpaMetamodelFiltering && paginationPagination) { _%>
       FilterComponent,
 <%_ } _%>
@@ -111,7 +111,7 @@ import { InfiniteScrollModule } from 'ngx-infinite-scroll';
       ItemCountComponent,
 <%_ } _%>
 <%_ if (paginationInfiniteScroll) { _%>
-      InfiniteScrollModule,
+      InfiniteScrollDirective,
 <%_ } _%>
     ],
 })
@@ -121,11 +121,11 @@ export class <%= componentName %> implements OnInit {
     private static readonly NOT_SORTABLE_FIELDS_AFTER_SEARCH = [<%- notSortableFieldsAfterSearch %>];
 
 <%_ } _%>
-    <%= entityInstancePlural %>?: I<%= entityAngularName %>[];
+    subscription: Subscription | null = null;
+    <%= entityInstancePlural %> = signal<I<%= entityAngularName %>[]>([]);
     isLoading = false;
 
-    predicate = '<%- primaryKey.name %>';
-    ascending = true;
+    sortState = sortStateSignal({});
 <%_ if (searchEngineAny) { _%>
     currentSearch = '';
 <%_ } _%>
@@ -134,71 +134,93 @@ export class <%= componentName %> implements OnInit {
 <%_ } _%>
 
 <%_ if (paginationPagination) { _%>
-<%- include('pagination-template'); -%>
+  itemsPerPage = ITEMS_PER_PAGE;
+  totalItems = 0;
+  page = 1;
 <%_ } else if (paginationInfiniteScroll) { _%>
-<%- include('infinite-scroll-template'); -%>
+    itemsPerPage = ITEMS_PER_PAGE;
+    links: WritableSignal<Record<string, undefined | Record<string, string | undefined>>> = signal({});
+    hasMorePage = computed(() => !!this.links().next);
+    isFirstFetch = computed(() => Object.keys(this.links()).length === 0);
 <%_ } _%>
 
-    constructor(
-      protected <%= entityInstance %>Service: <%= entityAngularName %>Service,
-      protected activatedRoute: ActivatedRoute,
-      public router: Router,
-<%_ if (paginationNo) { _%>
-      protected sortService: SortService,
-<%_ } else if (paginationInfiniteScroll) { _%>
-      protected parseLinks: ParseLinks,
+    public readonly router = inject(Router);
+    protected readonly <%= entityInstance %>Service = inject(<%= entityAngularName %>Service);
+    protected readonly activatedRoute = inject(ActivatedRoute);
+    protected readonly sortService = inject(SortService);
+<%_ if (paginationInfiniteScroll) { _%>
+    protected parseLinks = inject(ParseLinks);
 <%_ } _%>
 <%_ if (anyFieldIsBlobDerived) { _%>
-      protected dataUtils: DataUtils,
+    protected dataUtils = inject(DataUtils);
 <%_ } _%>
 <%_ if (!readOnly) { _%>
-      protected modalService: NgbModal
+    protected modalService = inject(NgbModal);
 <%_ } _%>
-    ) {}
+    protected ngZone = inject(NgZone);
+<%_ if (primaryKey) { _%>
+
+    track<%= primaryKey.nameCapitalized %> = (item: I<%= entityAngularName %>): <%= primaryKey.tsType %> => this.<%= entityInstance %>Service.get<%= entityAngularName %>Identifier(item);
+<%_ } _%>
+
+    ngOnInit(): void {
+      this.subscription = combineLatest([this.activatedRoute.queryParamMap, this.activatedRoute.data]).pipe(
+        tap(([params, data]) => this.fillComponentAttributeFromRoute(params, data)),
+<%_ if (paginationInfiniteScroll) { _%>
+        tap(() => this.reset()),
+<%_ } _%>
+<%_ if (!paginationNo || searchEngineAny || jpaMetamodelFiltering) { _%>
+        tap(() => this.load()),
+<%_ } else { _%>
+        tap(() => {
+          if (this.<%= entityInstancePlural %>().length === 0) {
+            this.load();
+          } else {
+            this.<%= entityInstancePlural %>.set(this.refineData(this.<%= entityInstancePlural %>()));
+          }
+        }),
+<%_ } _%>
+      ).subscribe();
+
+<% if (jpaMetamodelFiltering && paginationPagination) { %>
+      this.filters.filterChanges.subscribe(filterOptions => this.handleNavigation(1, this.sortState(), filterOptions));
+<%_ } _%>
+    }
 
 <%_ if (paginationInfiniteScroll) { _%>
     reset(): void {
-      this.page = 1;
-      this.<%= entityInstancePlural %> = [];
-      this.load();
+      this.<%= entityInstancePlural %>.set([]);
     }
 
-    loadPage(page: number): void {
-      this.page = page;
+    loadNextPage(): void {
       this.load();
     }
-
-<%_ } _%>
-<%_ if (primaryKey) { _%>
-    track<%= primaryKey.nameCapitalized %> = (_index: number, item: I<%= entityAngularName %>): <%= primaryKey.tsType %> => this.<%= entityInstance %>Service.get<%= entityAngularName %>Identifier(item);
 
 <%_ } _%>
 <%_ if (searchEngineAny) { _%>
     search(query: string): void {
-  <%_ if (notSortableFieldsAfterSearch) { _%>
-      if (query && <%= componentName %>.NOT_SORTABLE_FIELDS_AFTER_SEARCH.includes(this.predicate)) {
-    <%_ if (notSortableFieldsAfterSearchFieldNames.includes(primaryKey.name)) { _%>
-        this.predicate = '';
-    <%_ } else { _%>
-        this.predicate = '<%- primaryKey.name %>';
-        this.ascending = true;
-    <%_ } _%>
-      }
-  <%_ } _%>
-  <%_ if (!paginationNo) { _%>
+  <%_ if (paginationPagination) { _%>
       this.page = 1;
   <%_ } _%>
       this.currentSearch = query;
-      this.navigateToWithComponentValues();
+  <%_ if (notSortableFieldsAfterSearch) { _%>
+      const { predicate } = this.sortState();
+      if (query && predicate && <%= componentName %>.NOT_SORTABLE_FIELDS_AFTER_SEARCH.includes(predicate)) {
+        this.navigateToWithComponentValues(this.getDefaultSortState());
+        return;
+      }
+  <%_ } _%>
+      this.navigateToWithComponentValues(this.sortState());
     }
 
-<%_ } _%>
-    ngOnInit(): void {
-      this.load();
-<% if (jpaMetamodelFiltering && paginationPagination) { %>
-      this.filters.filterChanges.subscribe(filterOptions => this.handleNavigation(1, this.predicate, this.ascending, filterOptions));
-<% } %>
+    getDefaultSortState(): SortState {
+  <%_ if (notSortableFieldsAfterSearchFieldNames.includes(primaryKey.name)) { _%>
+      return {};
+  <%_ } else { _%>
+      return this.sortService.parseSortParam(this.activatedRoute.snapshot.data[DEFAULT_SORT_DATA]);
+  <%_ } _%>
     }
+<%_ } _%>
 
 <%_ if (anyFieldIsBlobDerived) { _%>
     byteSize(base64String: string): string {
@@ -218,52 +240,35 @@ export class <%= componentName %> implements OnInit {
       modalRef.closed
         .pipe(
           filter(reason => reason === ITEM_DELETED_EVENT),
-          switchMap(() => this.loadFromBackendWithRouteInformations())
-        ).subscribe(
-          {
-            next: (res: EntityArrayResponseType) => {
-            this.onResponseSuccess(res);
-          }
-        });
+          tap(() => this.load())
+        ).subscribe();
     }
 
 <%_ } _%>
     load(): void {
-      this.loadFromBackendWithRouteInformations().subscribe({
+      this.queryBackend().subscribe({
         next: (res: EntityArrayResponseType) => {
           this.onResponseSuccess(res);
         }
       });
     }
 
-    navigateToWithComponentValues(): void {
-      this.handleNavigation(<% if (!paginationNo) { %>this.page, <% } %>this.predicate, this.ascending<% if (jpaMetamodelFiltering && paginationPagination) { %>, this.filters.filterOptions<% } %><% if (searchEngineAny) { %>, this.currentSearch<% } %>);
+    navigateToWithComponentValues(event: SortState): void {
+      this.handleNavigation(<% if (paginationPagination) { %>this.page, <% } %>event<% if (jpaMetamodelFiltering && paginationPagination) { %>, this.filters.filterOptions<% } %><% if (searchEngineAny) { %>, this.currentSearch<% } %>);
     }
 
-<%_ if (!paginationNo) { _%>
-    navigateToPage(page = this.page): void {
-      this.handleNavigation(page, this.predicate, this.ascending<% if (jpaMetamodelFiltering && paginationPagination) { %>, this.filters.filterOptions<% } %><% if (searchEngineAny) { %>, this.currentSearch<% } %>);
+<%_ if (paginationPagination) { _%>
+    navigateToPage(page: number): void {
+      this.handleNavigation(page, this.sortState()<% if (jpaMetamodelFiltering && paginationPagination) { %>, this.filters.filterOptions<% } %><% if (searchEngineAny) { %>, this.currentSearch<% } %>);
     }
 
 <%_ } _%>
-    protected loadFromBackendWithRouteInformations(): Observable<EntityArrayResponseType> {
-      return combineLatest([this.activatedRoute.queryParamMap, this.activatedRoute.data])
-        .pipe(
-          tap(([params, data]) => this.fillComponentAttributeFromRoute(params, data)),
-          switchMap(() =>
-            this.queryBackend(<% if (!paginationNo) { %>this.page, <% } %>this.predicate, this.ascending<% if (jpaMetamodelFiltering && paginationPagination) { %>, this.filters.filterOptions<% } %><% if (searchEngineAny) { %>, this.currentSearch<% } %>)
-          )
-        );
-    }
-
     protected fillComponentAttributeFromRoute(params: ParamMap, data: Data): void {
 <%_ if (paginationPagination) { _%>
       const page = params.get(PAGE_HEADER);
       this.page = +(page ?? 1);
 <%_ } _%>
-      const sort = (params.get(SORT) ?? data[ DEFAULT_SORT_DATA ]).split(',');
-      this.predicate = sort[ 0 ];
-      this.ascending = sort[ 1 ] === ASC;
+      this.sortState.set(this.sortService.parseSortParam(params.get(SORT) ?? data[DEFAULT_SORT_DATA]));
 <%_ if (jpaMetamodelFiltering && paginationPagination) { _%>
       this.filters.initializeFromParams(params);
 <%_ } _%>
@@ -271,8 +276,9 @@ export class <%= componentName %> implements OnInit {
       if (params.has('search') && params.get('search') !== '') {
         this.currentSearch = params.get('search') as string;
   <%_ if (notSortableFieldsAfterSearch) { _%>
-          if (<%= componentName %>.NOT_SORTABLE_FIELDS_AFTER_SEARCH.includes(this.predicate)) {
-            this.predicate = '';
+          const { predicate } = this.sortState();
+          if (predicate && <%= componentName %>.NOT_SORTABLE_FIELDS_AFTER_SEARCH.includes(predicate)) {
+            this.sortState.set({});
           }
   <%_ } _%>
       }
@@ -285,27 +291,28 @@ export class <%= componentName %> implements OnInit {
 <%_ } _%>
       const dataFromBody = this.fillComponentAttributesFromResponseBody(response.body);
 <%_ if (paginationNo) { _%>
-      this.<%= entityInstancePlural %> =  this.refineData(dataFromBody);
+      this.<%= entityInstancePlural %>.set(this.refineData(dataFromBody));
 <%_ } else { _%>
-      this.<%= entityInstancePlural %> =  dataFromBody;
+      this.<%= entityInstancePlural %>.set(dataFromBody);
 <%_ } _%>
     }
 
 <%_ if (paginationNo) { _%>
     protected refineData(data: I<%= entityAngularName %>[]): I<%= entityAngularName %>[] {
-      return data.sort(this.sortService.startSort(this.predicate, this.ascending ? 1 : -1))
+      const { predicate, order } = this.sortState();
+      return predicate && order ? data.sort(this.sortService.startSort({ predicate, order })) : data;
     }
 
 <%_ } _%>
     protected fillComponentAttributesFromResponseBody(data: I<%= entityAngularName %>[] | null): I<%= entityAngularName %>[] {
 <%_ if (paginationInfiniteScroll) { _%>
-      // If there is previus link, data is a infinite scroll pagination content.
-      if ('prev' in this.links) {
-        const <%= entityInstancePlural %>New = this.<%= entityInstancePlural %> ?? [];
+      // If there is previous link, data is a infinite scroll pagination content.
+      if (this.links().prev) {
+        const <%= entityInstancePlural %>New = this.<%= entityInstancePlural %>();
         if (data) {
           for (const d of data) {
   <%_ if (primaryKey) { _%>
-            if (<%= entityInstancePlural %>New.map(op => op.<%= primaryKey.name %>).indexOf(d.<%= primaryKey.name %>) === -1) {
+            if (<%= entityInstancePlural %>New.some(op => op.<%= primaryKey.name %> === d.<%= primaryKey.name %>)) {
   <%_ } _%>
               <%= entityInstancePlural %>New.push(d);
   <%_ if (primaryKey) { _%>
@@ -326,24 +333,38 @@ export class <%= componentName %> implements OnInit {
   <%_ } else if (paginationInfiniteScroll) { _%>
       const linkHeader = headers.get('link');
       if (linkHeader) {
-        this.links = this.parseLinks.parse(linkHeader);
+        this.links.set(this.parseLinks.parseAll(linkHeader));
       } else {
-        this.links = {
-          last: 0,
-        };
+        this.links.set({});
       }
     <%_ } _%>
     }
 
 <%_ } _%>
-    protected queryBackend(<% if (!paginationNo) { %>page?: number, <% } %>predicate?: string, ascending?: boolean<% if (jpaMetamodelFiltering && paginationPagination) { %>, filterOptions?: IFilterOption[]<% } %><% if (searchEngineAny) { %>, currentSearch?: string<% } %>): Observable<EntityArrayResponseType> {
+    protected queryBackend(): Observable<EntityArrayResponseType> {
+<%_ if (paginationPagination || searchEngineAny) { _%>
+      const {
+  <%_ if (paginationPagination) { _%>
+        page,
+  <%_ } _%>
+  <%_ if (jpaMetamodelFiltering && paginationPagination) { _%>
+        filters,
+  <%_ } _%>
+  <%_ if (searchEngineAny) { _%>
+        currentSearch,
+  <%_ } _%>
+      } = this;
+<%_ } _%>
+
       this.isLoading = true;
-<%_ if (!paginationNo) { _%>
-      const pageToLoad: number = page ?? 1;
+<%_ if (paginationPagination) { _%>
+      const pageToLoad: number = page;
 <%_ } _%>
       const queryObject<% if ((jpaMetamodelFiltering && paginationPagination) || searchEngine) { %>: any <% } %> = {
-<%_ if (!paginationNo) { _%>
+<%_ if (paginationPagination) { _%>
         page: pageToLoad - 1,
+<%_ } _%>
+<%_ if (!paginationNo) { _%>
         size: this.itemsPerPage,
 <%_ } _%>
 <%_ if(implementsEagerLoadApis || containsBagRelationships) { _%>
@@ -352,12 +373,22 @@ export class <%= componentName %> implements OnInit {
 <%_ if (searchEngineAny) { _%>
         query: currentSearch,
 <%_ } _%>
-        sort: this.getSortQueryParam(predicate, ascending),
+<%_ if (!paginationInfiniteScroll) { _%>
+        sort: this.sortService.buildSortParam(this.sortState()),
+<%_ } _%>
       };
 <%_ if (jpaMetamodelFiltering && paginationPagination) { _%>
-      filterOptions?.forEach(filterOption => {
+      filters.filterOptions.forEach(filterOption => {
         queryObject[filterOption.name] = filterOption.values;
       });
+<%_ } _%>
+<%_ if (paginationInfiniteScroll) { _%>
+      if (this.hasMorePage()) {
+        Object.assign(queryObject, this.links().next);
+      } else if (this.isFirstFetch()) {
+        Object.assign(queryObject, { sort: this.sortService.buildSortParam(this.sortState()) });
+      }
+
 <%_ } _%>
 <%_ if (searchEngineAny) { _%>
       if (this.currentSearch && this.currentSearch !== '') {
@@ -376,16 +407,20 @@ export class <%= componentName %> implements OnInit {
 <%_ } _%>
     }
 
-    protected handleNavigation(<% if (!paginationNo) { %>page = this.page, <% } %>predicate?: string, ascending?: boolean<% if (jpaMetamodelFiltering && paginationPagination) { %>, filterOptions?: IFilterOption[]<% } %><% if (searchEngineAny) { %>, currentSearch?: string<% } %>): void {
+    protected handleNavigation(<% if (paginationPagination) { %>page: number, <% } %>sortState: SortState<% if (jpaMetamodelFiltering && paginationPagination) { %>, filterOptions?: IFilterOption[]<% } %><% if (searchEngineAny) { %>, currentSearch?: string<% } %>): void {
+<%_ if (paginationInfiniteScroll) { _%>
+      this.links.set({});
+
+<%_ } _%>
       const queryParamsObj<%_ if (jpaMetamodelFiltering && paginationPagination) { _%>: any<%_ } _%> = {
 <%_ if (searchEngineAny) { _%>
         search: currentSearch,
 <%_ } _%>
-<%_ if (!paginationNo) { _%>
+<%_ if (paginationPagination) { _%>
         page,
         size: this.itemsPerPage,
 <%_ } _%>
-        sort: this.getSortQueryParam(predicate, ascending),
+        sort: this.sortService.buildSortParam(sortState),
       };
 
 <%_ if (jpaMetamodelFiltering && paginationPagination) { _%>
@@ -394,18 +429,11 @@ export class <%= componentName %> implements OnInit {
       });
 <%_ } _%>
 
-      this.router.navigate([ './' ], {
-        relativeTo: this.activatedRoute,
-        queryParams: queryParamsObj,
+      this.ngZone.run(() => {
+        this.router.navigate(['./'], {
+          relativeTo: this.activatedRoute,
+          queryParams: queryParamsObj,
+        });
       });
-    }
-
-    protected getSortQueryParam(predicate = this.predicate, ascending = this.ascending): string[] {
-      const ascendingQueryParam = ascending ? ASC : DESC;
-      if (predicate === '') {
-        return [];
-      } else {
-        return [predicate + ',' + ascendingQueryParam];
-      }
     }
 }

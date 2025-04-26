@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -48,7 +48,7 @@ const initialState: EntityState<I<%= entityReactName %>> = {
 
 const apiUrl = '<%= entityApi %>api/<%= entityApiUrl %>';
 <%_ if (searchEngineAny) { _%>
-const apiSearchUrl = '<%= entityApi %>api/_search/<%= entityApiUrl %>';
+const apiSearchUrl = '<%= entityApi %>api/<%= entityApiUrl %>/_search';
 <%_ } _%>
 
 // Actions
@@ -63,18 +63,23 @@ export const searchEntities = createAsyncThunk(
     const requestUrl = `${apiSearchUrl}?query=${query}`;
   <%_ } _%>
     return axios.get<I<%= entityReactName %>[]>(requestUrl);
-  }
+  },
+  { serializeError: serializeAxiosError },
 );
 
 <%_ } _%>
-export const getEntities = createAsyncThunk('<%= entityInstance %>/fetch_entity_list', async ({ <%_ if(!paginationNo) { _%>page, size, <%_ } _%>sort }: IQueryParams) => {
+export const getEntities = createAsyncThunk(
+  '<%= entityInstance %>/fetch_entity_list',
+  async ({ <%_ if(!paginationNo) { _%>page, size, <%_ } _%>sort }: IQueryParams) => {
 <%_ if (!paginationNo) { _%>
-  const requestUrl = `${apiUrl}?${sort ? `page=${page}&size=${size}&sort=${sort}&` : ''}cacheBuster=${new Date().getTime()}`;
+    const requestUrl = `${apiUrl}?${sort ? `page=${page}&size=${size}&sort=${sort}&` : ''}cacheBuster=${new Date().getTime()}`;
 <%_ } else { _%>
-  const requestUrl = `${apiUrl}?${sort ? `sort=${sort}&` : ''}cacheBuster=${new Date().getTime()}`;
+    const requestUrl = `${apiUrl}?${sort ? `sort=${sort}&` : ''}cacheBuster=${new Date().getTime()}`;
 <%_ } _%>
-  return axios.get<I<%= entityReactName %>[]>(requestUrl);
-});
+    return axios.get<I<%= entityReactName %>[]>(requestUrl);
+  },
+  { serializeError: serializeAxiosError },
+);
 
 export const getEntity = createAsyncThunk(
   '<%= entityInstance %>/fetch_entity',
@@ -82,13 +87,13 @@ export const getEntity = createAsyncThunk(
     const requestUrl = `${apiUrl}/${id}`;
     return axios.get<I<%= entityReactName %>>(requestUrl);
   },
-  { serializeError: serializeAxiosError }
+  { serializeError: serializeAxiosError },
 );
 
 <%_ if (!readOnly) { _%>
 export const createEntity = createAsyncThunk(
   '<%= entityInstance %>/create_entity',
-  async (entity: I<%= entityReactName %>, thunkAPI) => {
+  async (entity: I<%= entityReactName %><%_ if (!paginationInfiniteScroll) { _%>, thunkAPI<%_ } _%>) => {
   <%_ if (!paginationInfiniteScroll) { _%>
     const result = await axios.post<I<%= entityReactName %>>(apiUrl, cleanEntity(entity));
     thunkAPI.dispatch(getEntities({}));
@@ -102,7 +107,7 @@ export const createEntity = createAsyncThunk(
 
 export const updateEntity = createAsyncThunk(
   '<%= entityInstance %>/update_entity',
-  async (entity: I<%= entityReactName %>, thunkAPI) => {
+  async (entity: I<%= entityReactName %><%_ if (!paginationInfiniteScroll) { _%>, thunkAPI<%_ } _%>) => {
   <%_ if (!paginationInfiniteScroll) { _%>
     const result = await axios.put<I<%= entityReactName %>>(`${apiUrl}/${entity.<%= primaryKey.name %>}`, cleanEntity(entity));
     thunkAPI.dispatch(getEntities({}));
@@ -116,7 +121,7 @@ export const updateEntity = createAsyncThunk(
 
 export const partialUpdateEntity = createAsyncThunk(
   '<%= entityInstance %>/partial_update_entity',
-  async (entity: I<%= entityReactName %>, thunkAPI) => {
+  async (entity: I<%= entityReactName %><%_ if (!paginationInfiniteScroll) { _%>, thunkAPI<%_ } _%>) => {
   <%_ if (!paginationInfiniteScroll) { _%>
     const result = await axios.patch<I<%= entityReactName %>>(`${apiUrl}/${entity.<%= primaryKey.name %>}`, cleanEntity(entity));
     thunkAPI.dispatch(getEntities({}));
@@ -130,7 +135,7 @@ export const partialUpdateEntity = createAsyncThunk(
 
 export const deleteEntity = createAsyncThunk(
   '<%= entityInstance %>/delete_entity',
-  async (id: string | number, thunkAPI) => {
+  async (id: string | number<%_ if (!paginationInfiniteScroll) { _%>, thunkAPI<%_ } _%>) => {
     const requestUrl = `${apiUrl}/${id}`;
   <%_ if (!paginationInfiniteScroll) { _%>
     const result = await axios.delete<I<%= entityReactName %>>(requestUrl);

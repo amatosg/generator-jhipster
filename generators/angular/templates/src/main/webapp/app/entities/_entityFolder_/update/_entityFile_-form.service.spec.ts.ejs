@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -40,7 +40,7 @@ describe('<%= entityAngularName %> Form Service', () => {
 <%_ for (const field of fields) { _%>
             <%= field.fieldName %>: expect.any(Object),
 <%_ } _%>
-<%_ for (const relationship of relationships.filter(relationship => relationship.ownerSide || relationship.relationshipManyToMany)) { _%>
+<%_ for (const relationship of relationships.filter(relationship => relationship.persistableRelationship)) { _%>
             <%= relationship.propertyName %>: expect.any(Object),
 <%_ } _%>
           })
@@ -54,7 +54,7 @@ describe('<%= entityAngularName %> Form Service', () => {
 <%_ for (const field of fields) { _%>
           <%= field.fieldName %>: expect.any(Object),
 <%_ } _%>
-<%_ for (const relationship of relationships.filter(relationship => relationship.ownerSide || relationship.relationshipManyToMany)) { _%>
+<%_ for (const relationship of relationships.filter(relationship => relationship.persistableRelationship)) { _%>
           <%= relationship.propertyName %>: expect.any(Object),
 <%_ } _%>
         }));
@@ -86,6 +86,7 @@ describe('<%= entityAngularName %> Form Service', () => {
         expect(<%= entityInstance %>).toMatchObject(sampleWithRequiredData);
       });
     });
+<%_ if (primaryKey.autoGenerate) { _%>
 
     describe('resetForm', () => {
       it('passing I<%= entityAngularName %> should not enable <%= primaryKey.name %> FormControl', () => {
@@ -106,5 +107,6 @@ describe('<%= entityAngularName %> Form Service', () => {
         expect(formGroup.controls.<%= primaryKey.name %>.disabled).toBe(true);
       });
     });
+<%_ } _%>
   });
 });

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -25,7 +25,7 @@ import { mergeMap } from 'rxjs/operators';
 import { I<%= entityAngularName %> } from '../<%= entityFileName %>.model';
 import { <%= entityAngularName %>Service } from '../service/<%= entityFileName %>.service';
 
-export const <%= entityInstance %>Resolve = (route: ActivatedRouteSnapshot): Observable<null | I<%= entityAngularName %>> => {
+const <%= entityInstance %>Resolve = (route: ActivatedRouteSnapshot): Observable<null | I<%= entityAngularName %>> => {
   const id = route.params['<%= primaryKey.name %>'];
   if (id) {
     return inject(<%= entityAngularName %>Service)
@@ -38,7 +38,7 @@ export const <%= entityInstance %>Resolve = (route: ActivatedRouteSnapshot): Obs
             inject(Router).navigate(['404']);
             return EMPTY;
           }
-        })
+        }),
       );
   }
   return of(null);

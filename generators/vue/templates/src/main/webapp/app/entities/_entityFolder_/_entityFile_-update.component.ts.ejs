@@ -14,9 +14,9 @@ import { useAlertService } from '@/shared/alert/alert.service';
 <%_
   const allRelationshipsThatNeedSelectOptions = Object
     .values(relationshipsByOtherEntity)
-    .map(relationships => relationships.filter(rel => rel.ownerSide))
+    .map(relationships => relationships.filter(rel => rel.persistableRelationship))
     .filter(relationships => relationships.length > 0);
-  const relationshipsContainManyToOne = relationships.some(rel => !rel.otherEntityIsEmbedded && rel.collection && rel.ownerSide);
+  const relationshipsContainManyToOne = relationships.some(rel => !rel.otherEntityIsEmbedded && rel.collection && rel.persistableRelationship);
 _%>
 
 <%_ for (const [relationship] of Object.values(allRelationshipsThatNeedSelectOptions)) { _%>
@@ -40,7 +40,7 @@ export default defineComponent({
   setup() {
     const <%= entityInstance %>Service = inject('<%= entityInstance %>Service', () => new <%= entityAngularName %>Service());
     const alertService = inject('alertService', () => useAlertService(), true);
-  
+
     const <%= entityInstance %>: Ref<I<%= entityAngularName %>> = ref(new <%= entityAngularName %>());
 <%_ for (const [relationship] of Object.values(allRelationshipsThatNeedSelectOptions)) { _%>
   <%_ if (relationship.otherEntity.builtInUser) { _%>
@@ -64,9 +64,9 @@ export default defineComponent({
 
     const previousState = () => router.go(-1);
 
-    const retrieve<%= entityAngularName %> = async <%= entityInstance %>Id => {
+    const retrieve<%= entityAngularName %> = async <%= entityInstance %><%= primaryKey.nameCapitalized %> => {
       try {
-        const res = await <%= entityInstance %>Service().find(<%= entityInstance %>Id);
+        const res = await <%= entityInstance %>Service().find(<%= entityInstance %><%= primaryKey.nameCapitalized %>);
 <%_
         for (field of fields.filter(field => !field.id)) {
             const fieldName = field.fieldName;
@@ -125,7 +125,7 @@ _%>
         maxLength: validations.maxLength(t$('entity.validation.maxlength', { max: <%= field.fieldValidateRulesMaxlength %> }).toString(), <%= field.fieldValidateRulesMaxlength %>),
     <%_ } _%>
     <%_ if (field.fieldTypeInteger || field.fieldTypeLong) { _%>
-        numeric: validations.numeric(t$('entity.validation.number').toString()),
+        integer: validations.integer(t$('entity.validation.number').toString()),
     <%_ } _%>
     <%_ if (field.fieldValidationMin) { _%>
         min: validations.minValue(t$('entity.validation.min', { min: <%= field.fieldValidateRulesMin %> }).toString(), <%= field.fieldValidateRulesMin %>),
@@ -176,7 +176,7 @@ _%>
     <%_ if (relationshipsContainManyToOne) { _%>
     <%_
       for (relationship of relationships) {
-      if (relationship.relationshipType === 'many-to-many' && relationship.ownerSide === true) {
+      if (relationship.collection && relationship.persistableRelationship) {
       const relationshipFieldNamePlural = relationship.relationshipFieldNamePlural;
     _%>
     this.<%= entityInstance %>.<%= relationshipFieldNamePlural %> = [];
@@ -186,19 +186,15 @@ _%>
   methods: {
     save() : void {
       this.isSaving = true;
-    <%_ for (field of fields.filter(field => !field.id)) {
-          const fieldName = field.fieldName;
-          const fieldType = field.fieldType;
-    } _%>
-    if (this.<%= entityInstance %>.id) {
+    if (this.<%= entityInstance %>.<%= primaryKey.name %>) {
         this.<%= entityInstance %>Service().update(this.<%= entityInstance %>).then((param) => {
           this.isSaving = false;
           this.previousState();
           this.alertService.showInfo(
 <%_ if (enableTranslation) { _%>
-            this.t$('<%= i18nAlertHeaderPrefix %>.updated', { 'param' : param.id })
+            this.t$('<%= i18nAlertHeaderPrefix %>.updated', { 'param' : param.<%= primaryKey.name %> })
 <%_ } else {_%>
-            'A <%= entityAngularName %> is updated with identifier ' + param.id
+            'A <%= entityAngularName %> is updated with identifier ' + param.<%= primaryKey.name %>
 <%_ } _%>
           );
         }).catch(error => {
@@ -211,9 +207,9 @@ _%>
           this.previousState();
           this.alertService.showSuccess(
 <%_ if (enableTranslation) { _%>
-            this.t$('<%= i18nAlertHeaderPrefix %>.created', { param: param.id }).toString()
+            this.t$('<%= i18nAlertHeaderPrefix %>.created', { param: param.<%= primaryKey.name %> }).toString()
 <%_ } else {_%>
-            'A <%= entityAngularName %> is created with identifier ' + param.id
+            'A <%= entityAngularName %> is created with identifier ' + param.<%= primaryKey.name %>
 <%_ } _%>
           );
         }).catch(error => {
@@ -240,9 +236,9 @@ _%>
 
   <%_ } _%>
   <%_ if (relationshipsContainManyToOne) { _%>
-    getSelected(selectedVals, option) : any {
+    getSelected(selectedVals, option, pkField = 'id') : any {
       if (selectedVals) {
-        return selectedVals.find(value => option.id === value.id) ?? option;
+        return selectedVals.find(value => option[pkField] === value[pkField]) ?? option;
       }
       return option;
     },

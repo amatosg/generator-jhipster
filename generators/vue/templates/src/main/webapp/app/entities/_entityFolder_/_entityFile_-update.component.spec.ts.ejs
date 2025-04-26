@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,8 +16,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
-<%_ const tsKeyId = this.generateTestEntityId(primaryKey.type); _%>
-/* tslint:disable max-line-length */
+<%_ const tsKeyId = primaryKey.tsSampleValues[0]; _%>
 import { vitest } from 'vitest';
 import { shallowMount, type MountingOptions } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
@@ -34,7 +33,7 @@ import AlertService from '@/shared/alert/alert.service';
 <%_
   const allRelationshipsThatNeedSelectOptions = Object
     .values(relationshipsByOtherEntity)
-    .map(relationships => relationships.filter(rel => rel.ownerSide))
+    .map(relationships => relationships.filter(rel => rel.persistableRelationship))
     .filter(relationships => relationships.length > 0);
 _%>
 <%_ for (const [relationship] of Object.values(allRelationshipsThatNeedSelectOptions)) { _%>
@@ -55,7 +54,7 @@ vitest.mock('vue-router', () => ({
   useRouter: () => ({ go: routerGoMock }),
 }));
 
-const <%= entityInstance %>Sample = { id: <%- tsKeyId %> };
+const <%= entityInstance %>Sample = { <%= primaryKey.name %>: <%- tsKeyId %> };
 
 describe('Component Tests', () => {
   let mountOptions: MountingOptions<<%= entityAngularName %>UpdateComponentType>['global'];

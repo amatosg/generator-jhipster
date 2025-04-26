@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -29,7 +29,7 @@ import org.testcontainers.utility.DockerImageName;
 public class RedisTestContainer implements InitializingBean, DisposableBean {
 
     private GenericContainer redisContainer;
-    private static final Logger log = LoggerFactory.getLogger(RedisTestContainer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RedisTestContainer.class);
 
     @Override
     public void destroy() {
@@ -43,7 +43,7 @@ public class RedisTestContainer implements InitializingBean, DisposableBean {
         if (null == redisContainer) {
             redisContainer = new GenericContainer("<%- dockerContainers.redis %>")
                 .withExposedPorts(6379)
-                .withLogConsumer(new Slf4jLogConsumer(log))
+                .withLogConsumer(new Slf4jLogConsumer(LOG))
                 .withReuse(true);
         }
         if (!redisContainer.isRunning()) {

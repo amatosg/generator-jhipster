@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -34,6 +34,9 @@ import { hasAnyAuthority } from 'app/shared/auth/private-route';
 import ErrorBoundary from 'app/shared/error/error-boundary';
 import { AUTHORITIES } from 'app/config/constants';
 import AppRoutes from 'app/routes';
+<%_ if (enableTranslation &&  enableI18nRTL) { _%>
+import { setTextDirection } from './config/translation';
+<%_ } _%>
 
 const baseHref = document.querySelector('base').getAttribute('href').replace(/\/$/, '');
 
@@ -54,11 +57,17 @@ export const App = () => {
   const isInProduction = useAppSelector(state => state.applicationProfile.inProduction);
   const isOpenAPIEnabled = useAppSelector(state => state.applicationProfile.isOpenAPIEnabled);
 
+<%_ if (enableTranslation && enableI18nRTL) { _%>
+  useEffect(() => {
+    setTextDirection(currentLocale);
+  }, [currentLocale]);
+<%_ } _%>
+
   const paddingTop = '60px';
   return (
     <BrowserRouter basename={baseHref}>
       <div className="app-container" style={{ paddingTop }}>
-        <ToastContainer position={toast.POSITION.TOP_LEFT} className="toastify-container" toastClassName="toastify-toast"/>
+        <ToastContainer position="top-left" className="toastify-container" toastClassName="toastify-toast" />
         <ErrorBoundary>
           <Header
             isAuthenticated={isAuthenticated}
@@ -74,10 +83,10 @@ export const App = () => {
         <div className="container-fluid view-container" id="app-view-container">
           <Card className="jh-card">
             <ErrorBoundary>
-              <AppRoutes/>
+              <AppRoutes />
             </ErrorBoundary>
           </Card>
-          <Footer/>
+          <Footer />
         </div>
       </div>
     </BrowserRouter>

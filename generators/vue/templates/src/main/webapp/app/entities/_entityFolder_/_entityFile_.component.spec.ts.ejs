@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,9 +17,8 @@
  limitations under the License.
 -%>
 <%_
-const tsKeyId = this.generateTestEntityId(primaryKey.type);
+const tsKeyId = primaryKey.tsSampleValues[0];
 _%>
-/* tslint:disable max-line-length */
 import { vitest } from 'vitest';
 import { shallowMount, type MountingOptions } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
@@ -86,7 +85,7 @@ describe('Component Tests', () => {
     describe('Mount', () => {
       it('Should call load all on init', async () => {
         // GIVEN
-        <%= entityInstance %>ServiceStub.retrieve.resolves({ headers: {}, data: [{ id: <%- tsKeyId %> }] });
+        <%= entityInstance %>ServiceStub.retrieve.resolves({ headers: {}, data: [{ <%= primaryKey.name %>: <%- tsKeyId %> }] });
 
         // WHEN
         const wrapper = shallowMount(<%= entityAngularName %>, { global: mountOptions });
@@ -95,7 +94,7 @@ describe('Component Tests', () => {
 
         // THEN
         expect(<%= entityInstance %>ServiceStub.retrieve.calledOnce).toBeTruthy();
-        expect(comp.<%= entityInstancePlural %>[0]).toEqual(expect.objectContaining({id: <%- tsKeyId %>}));
+        expect(comp.<%= entityInstancePlural %>[0]).toEqual(expect.objectContaining({<%= primaryKey.name %>: <%- tsKeyId %>}));
       });
 <%_ if (!paginationNo) { _%>
 
@@ -126,7 +125,7 @@ describe('Component Tests', () => {
 
       it('should load a page', async () => {
         // GIVEN
-        <%= entityInstance %>ServiceStub.retrieve.resolves({ headers: {}, data: [{ id: <%- tsKeyId %> }] });
+        <%= entityInstance %>ServiceStub.retrieve.resolves({ headers: {}, data: [{ <%= primaryKey.name %>: <%- tsKeyId %> }] });
 
         // WHEN
         comp.page = 2;
@@ -134,7 +133,7 @@ describe('Component Tests', () => {
 
         // THEN
         expect(<%= entityInstance %>ServiceStub.retrieve.called).toBeTruthy();
-        expect(comp.<%= entityInstancePlural %>[0]).toEqual(expect.objectContaining({id: <%- tsKeyId %>}));
+        expect(comp.<%= entityInstancePlural %>[0]).toEqual(expect.objectContaining({<%= primaryKey.name %>: <%- tsKeyId %>}));
     });
   <%_ if (!paginationInfiniteScroll) { _%>
 
@@ -152,7 +151,7 @@ describe('Component Tests', () => {
         comp.page = 2;
         await comp.$nextTick();
         <%= entityInstance %>ServiceStub.retrieve.reset();
-        <%= entityInstance %>ServiceStub.retrieve.resolves({ headers: {}, data: [{ id: <%- tsKeyId %> }] });
+        <%= entityInstance %>ServiceStub.retrieve.resolves({ headers: {}, data: [{ <%= primaryKey.name %>: <%- tsKeyId %> }] });
 
         // WHEN
         comp.clear();
@@ -161,7 +160,7 @@ describe('Component Tests', () => {
         // THEN
         expect(comp.page).toEqual(1);
         expect(<%= entityInstance %>ServiceStub.retrieve.callCount).toEqual(1);
-        expect(comp.<%= entityInstancePlural %>[0]).toEqual(expect.objectContaining({id: <%- tsKeyId %>}));
+        expect(comp.<%= entityInstancePlural %>[0]).toEqual(expect.objectContaining({<%= primaryKey.name %>: <%- tsKeyId %>}));
       });
 
       it('should calculate the sort attribute for a non-id attribute', async () => {
@@ -182,7 +181,7 @@ describe('Component Tests', () => {
         <%= entityInstance %>ServiceStub.delete.resolves({});
 
         // WHEN
-        comp.prepareRemove({id: <%- tsKeyId %>});
+        comp.prepareRemove({<%= primaryKey.name %>: <%- tsKeyId %>});
 
         comp.remove<%= entityAngularName %>();
         await comp.$nextTick(); // clear components

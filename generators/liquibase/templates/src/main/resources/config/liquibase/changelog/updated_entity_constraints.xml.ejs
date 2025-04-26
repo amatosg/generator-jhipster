@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,11 +16,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
-<?xml version="1.0" encoding="utf-8"?>
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+<%- include('/liquibase-changelog-header') -%>
 <%_
 const entityTableName = entity.entityTableName;
 const entityClass = entity.entityClass;
@@ -38,7 +34,7 @@ if (hasFieldConstraint) { _%>
             columnNames="<%= field.columnName %>"
             constraintName="<%= field.uniqueConstraintName %>"/>
     <%_ }
-        if (!field.nullable) {
+        if (field.columnRequired) {
     _%>
         <addNotNullConstraint tableName="<%= entityTableName %>"
             columnName="<%= field.columnName %>"
@@ -50,6 +46,31 @@ if (hasFieldConstraint) { _%>
     <%_     }
         }
     } _%>
+    </changeSet>
+<% } _%>
+<%_ if (removedDefaultValueFields && removedDefaultValueFields.length) { _%>
+    <!--
+        Removed the default value for the fields for entity <%= entityClass %>.
+    -->
+    <changeSet id="<%= changelogDate %>-fields-remove-default-value" author="jhipster">
+    <%_ for (field of removedDefaultValueFields) { _%>
+        <dropDefaultValue tableName="<%= entityTableName %>"
+            columnName="<%= field.columnName %>"
+            columnDataType="<%= field.columnType %>"/>
+    <%_ } _%>
+    </changeSet>
+<% } _%>
+<%_ if (addedDefaultValueFields && addedDefaultValueFields.length) { _%>
+    <!--
+        Added the default value for the fields for entity <%= entityClass %>.
+    -->
+    <changeSet id="<%= changelogDate %>-fields-add-default-value" author="jhipster">
+    <%_ for (field of addedDefaultValueFields) { _%>
+        <addDefaultValue tableName="<%= entityTableName %>"
+            columnName="<%= field.columnName %>"
+            columnDataType="<%= field.columnType %>"
+            <%- this.createDefaultValueLiquibaseAttribute(field) -%>/>
+    <%_ } _%>
     </changeSet>
 <% } _%>
 <%_ if (hasRelationshipConstraint) { _%>
@@ -69,7 +90,7 @@ if (hasFieldConstraint) { _%>
             columnNames="<%= relationshipData.columnName %>_id"
             constraintName="<%= uniqueConstraintName %>"/>
         <%_ }
-        if (!relationshipData.nullable) {
+        if (relationshipData.columnRequired) {
         _%>
         <addNotNullConstraint tableName="<%= entityTableName %>"
             columnName="<%= relationshipData.columnName %>_id"
@@ -78,72 +99,15 @@ if (hasFieldConstraint) { _%>
      } _%>
     </changeSet>
 <%_ } _%>
-<%_ if (shouldWriteAnyRelationship) { %>
+<%_ if (addedRelationships && addedRelationships.length) { %>
 
     <!--
         Added the relationship constraints for entity <%= entityClass %>.
     -->
     <changeSet id="<%= changelogDate %>-relationship-foreign-keys" author="jhipster">
-    <%_ for (idx in addedRelationships) {
-        const relationship = addedRelationships[idx];
-        onDelete = relationship.onDelete,
-        onUpdate = relationship.onUpdate;
-
-        if (relationship.shouldWriteRelationship) {
-            const constraintName = this.getFKConstraintName(entityTableName, relationship.columnName, prodDatabaseType);
-            let baseColumnName = relationship.columnName + '_id';
-            if (relationship.relationshipType === 'one-to-one' && relationship.id === true) {
-                baseColumnName = 'id';
-            }
-    _%>
-        <addForeignKeyConstraint baseColumnNames="<%= baseColumnName %>"
-                                 baseTableName="<%= entityTableName %>"
-                                 constraintName="<%= constraintName %>"
-                                 referencedColumnNames="id"
-                                 referencedTableName="<%= relationship.otherEntityTableName %>"
-            <%_ if (onDelete) { _%>                                 
-                                 onDelete="<%= onDelete %>"
-            <%_ } _%>
-            <%_ if (onUpdate) { _%>
-                                 onUpdate="<%= onUpdate %>"
-            <%_ } _%>
-                                 />
-    <%_ } else if (relationship.shouldWriteJoinTable) {
-            const constraintName = this.getFKConstraintName(relationship.joinTable.name, entityTableName, prodDatabaseType);
-            const otherEntityConstraintName = this.getFKConstraintName(relationship.joinTable.name, relationship.columnName, prodDatabaseType);
-    _%>
-
-        <addForeignKeyConstraint baseColumnNames="<%= entity.primaryKey.fields.map(field => relationship.columnName + '_' + field.columnName).join(', ') %>"
-                                 baseTableName="<%= relationship.joinTable.name %>"
-                                 constraintName="<%= constraintName %>"
-                                 referencedColumnNames="<%= entity.primaryKey.fields.map(field => field.columnName).join(', ') %>"
-                                 referencedTableName="<%= entityTableName %>"
-            <%_ if (onDelete) { _%>                                 
-                                 onDelete="<%= onDelete %>"
-            <%_ } _%>
-            <%_ if (onUpdate) { _%>
-                                 onUpdate="<%= onUpdate %>"
-            <%_ } _%>
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="<%= relationship.otherEntity.primaryKey.fields.map(field => relationship.columnName + '_' + field.columnName).join(', ') %>"
-                                 baseTableName="<%= relationship.joinTable.name %>"
-                                 constraintName="<%= otherEntityConstraintName %>"
-                                 referencedColumnNames="<%= relationship.otherEntity.primaryKey.fields.map(field => field.columnName).join(', ') %>"
-                                 referencedTableName="<%= relationship.otherEntityTableName %>"
-            <%_ if (relationship.otherRelationship) { 
-                // User object is not supporting this right now
-                _%>
-                <%_ if (relationship.otherRelationship.onDelete) { _%>                                 
-                                 onDelete="<%= relationship.otherRelationship.onDelete %>"
-                <%_ } _%>
-                <%_ if (relationship.otherRelationship.onUpdate) { _%>
-                                 onUpdate="<%= relationship.otherRelationship.onUpdate %>"
-                <%_ } _%>
-            <%_ } _%>
-                                 />
-    <%_ }
-    } _%>
+    <%_ for (relationship of addedRelationships) { _%>
+<%- include('./add_relationship_constraints', { entity, relationship, prodDatabaseType }) -%>
+    <%_ } _%>
     </changeSet>
 <%_ } _%>
 </databaseChangeLog>

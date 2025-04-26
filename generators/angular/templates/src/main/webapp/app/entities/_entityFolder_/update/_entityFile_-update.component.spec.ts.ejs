@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,20 +17,18 @@
  limitations under the License.
 -%>
 <%_
-const tsKeyId = this.generateTestEntityId(primaryKey.type);
+const tsKeyId = primaryKey.tsSampleValues[0];
 const allRelationshipsByEntityNeedingOptions = Object
-  .values(differentRelationships)
-  .map(relationships => relationships.filter(rel => rel.ownerSide))
+  .values(relationshipsByOtherEntity)
+  .map(relationships => relationships.filter(rel => rel.persistableRelationship && !rel.otherEntity.embedded))
   .filter(relationships => relationships.length > 0);
-const testEntityPrimaryKey0 = this.generateTestEntityPrimaryKey(primaryKey, 0);
-const testEntityPrimaryKey1 = this.generateTestEntityPrimaryKey(primaryKey, 1);
+const testEntityPrimaryKey0 = tsPrimaryKeySamples[0];
+const testEntityPrimaryKey1 = tsPrimaryKeySamples[1];
 _%>
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpResponse } from '@angular/common/http';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClient, HttpResponse } from '@angular/common/http';
 import { FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
 import { of, Subject, from } from 'rxjs';
 
 import { <%= entityAngularName %>FormService } from './<%= entityFileName %>-form.service';
@@ -38,14 +36,8 @@ import { <%= entityAngularName %>Service } from '../service/<%= entityFileName %
 import { I<%= entityAngularName %> } from '../<%= entityFileName %>.model';
 <%_ for (const relationshipsByEntityNeedingOptions of allRelationshipsByEntityNeedingOptions.filter(relationships => relationships[0].otherEntity.entityAngularName !== entityAngularName)) { _%>
   <%_ const otherEntity = relationshipsByEntityNeedingOptions[0].otherEntity; _%>
-  <%_ if (otherEntity.builtInUser) { _%>
-
-import { IUser } from 'app/entities/user/user.model';
-import { UserService } from 'app/entities/user/user.service';
-  <%_ } else { _%>
 import { I<%= otherEntity.entityAngularName %> } from 'app/entities/<%= otherEntity.entityFolderName %>/<%= otherEntity.entityFileName %>.model';
 import { <%= otherEntity.entityAngularName %>Service } from 'app/entities/<%= otherEntity.entityFolderName %>/service/<%= otherEntity.entityFileName %>.service';
-  <%_ } _%>
 <%_ } _%>
 
 import { <%= entityAngularName %>UpdateComponent } from './<%= entityFileName %>-update.component';
@@ -64,11 +56,10 @@ describe('<%= entityAngularName %> Management Update Component', () => {
     beforeEach(() => {
         TestBed.configureTestingModule({
             imports: [
-                HttpClientTestingModule,
-                RouterTestingModule.withRoutes([]),
                 <%= entityAngularName %>UpdateComponent,
             ],
             providers: [
+              provideHttpClient(),
               FormBuilder,
               {
                 provide: ActivatedRoute,
@@ -99,19 +90,19 @@ describe('<%= entityAngularName %> Management Update Component', () => {
   <%_ const relationshipsWithCustomSharedOptions = relationshipsByEntityNeedingOptions.filter(rel => !relationshipsWithCustomUniqueOptions.includes(rel)); _%>
   <%_ if (relationshipsWithCustomSharedOptions.length > 0) { _%>
     <%_ const otherEntity = relationshipsByEntityNeedingOptions[0].otherEntity; _%>
-        it('Should call <%= otherEntity.entityAngularName %> query and add missing value', () => {
+        it('should call <%= otherEntity.entityAngularName %> query and add missing value', () => {
                 const <%= entityInstance %> : I<%= entityAngularName %> = <%- testEntityPrimaryKey1 %>;
     <%_ for (const relationship of relationshipsWithCustomSharedOptions) { _%>
       <%_ const reference = relationship.reference _%>
       <%_ if (relationship.collection) { _%>
-                const <%= reference.name %> : I<%= otherEntity.entityAngularName %>[] = [<%- this.generateTestEntityPrimaryKey(otherEntity.primaryKey) %>];
+                const <%= reference.name %> : I<%= otherEntity.entityAngularName %>[] = [<%- otherEntity.tsPrimaryKeySamples[0] %>];
       <%_ } else { _%>
-                const <%= reference.name %> : I<%= otherEntity.entityAngularName %> = <%- this.generateTestEntityPrimaryKey(otherEntity.primaryKey) %>;
+                const <%= reference.name %> : I<%= otherEntity.entityAngularName %> = <%- otherEntity.tsPrimaryKeySamples[0] %>;
       <%_ } _%>
                 <%= entityInstance %>.<%= reference.name %> = <%= reference.name %>;
     <%_ } _%>
 
-                const <%= otherEntity.entityInstance %>Collection: I<%= otherEntity.entityAngularName %>[] = [<%- this.generateTestEntityPrimaryKey(otherEntity.primaryKey) %>];
+                const <%= otherEntity.entityInstance %>Collection: I<%= otherEntity.entityAngularName %>[] = [<%- otherEntity.tsPrimaryKeySamples[0] %>];
                 jest.spyOn(<%= otherEntity.entityInstance %>Service, 'query').mockReturnValue(of(new HttpResponse({ body: <%= otherEntity.entityInstance %>Collection })));
                 const additional<%= otherEntity.entityAngularNamePlural %> = [
     <%_ for (const relationship of relationshipsWithCustomSharedOptions) { _%>
@@ -137,12 +128,12 @@ describe('<%= entityAngularName %> Management Update Component', () => {
   <%_ for (const relationship of relationshipsWithCustomUniqueOptions) { %>
     <%_ const otherEntity = relationship.otherEntity _%>
     <%_ const reference = relationship.reference _%>
-        it('Should call <%= reference.name %> query and add missing value', () => {
+        it('should call <%= reference.name %> query and add missing value', () => {
                 const <%= entityInstance %> : I<%= entityAngularName %> = <%- testEntityPrimaryKey1 %>;
-                const <%= reference.name %> : I<%= otherEntity.entityAngularName %> = <%- this.generateTestEntityPrimaryKey(otherEntity.primaryKey) %>;
+                const <%= reference.name %> : I<%= otherEntity.entityAngularName %> = <%- otherEntity.tsPrimaryKeySamples[0] %>;
                 <%= entityInstance %>.<%= reference.name %> = <%= reference.name %>;
 
-                const <%= reference.name %>Collection: I<%= otherEntity.entityAngularName %>[] = [<%- this.generateTestEntityPrimaryKey(otherEntity.primaryKey) %>];
+                const <%= reference.name %>Collection: I<%= otherEntity.entityAngularName %>[] = [<%- otherEntity.tsPrimaryKeySamples[0] %>];
                 jest.spyOn(<%= otherEntity.entityInstance %>Service, 'query').mockReturnValue(of(new HttpResponse({ body: <%= reference.name %>Collection })));
                 const expectedCollection: I<%= otherEntity.entityAngularName %>[] = [<%= reference.name %>, ...<%= reference.name %>Collection];
                 jest.spyOn(<%= otherEntity.entityInstance %>Service, 'add<%= otherEntity.entityAngularName %>ToCollectionIfMissing').mockReturnValue(expectedCollection);
@@ -157,12 +148,12 @@ describe('<%= entityAngularName %> Management Update Component', () => {
 
   <%_ } _%>
 <%_ } _%>
-        it('Should update editForm', () => {
+        it('should update editForm', () => {
             const <%= entityInstance %>: I<%= entityAngularName %> = <%- testEntityPrimaryKey1 %>;
 <%_ for (const relationshipsByEntityNeedingOptions of allRelationshipsByEntityNeedingOptions) { _%>
   <%_ for (const relationship of relationshipsByEntityNeedingOptions) { _%>
     <%_ const otherEntity = relationship.otherEntity _%>
-            const <%= relationship.relationshipName %>: I<%= otherEntity.entityAngularName %> = <%- this.generateTestEntityPrimaryKey(otherEntity.primaryKey) %>;
+            const <%= relationship.relationshipName %>: I<%= otherEntity.entityAngularName %> = <%- otherEntity.tsPrimaryKeySamples[0] %>;
             <%= entityInstance %>.<%= relationship.reference.name %> = <%= relationship.collection ? `[${relationship.relationshipName}]` : relationship.relationshipName %>;
   <%_ } _%>
 <%_ } _%>
@@ -174,7 +165,7 @@ describe('<%= entityAngularName %> Management Update Component', () => {
   <%_ const relationshipsWithCustomUniqueOptions = relationshipsByEntityNeedingOptions.filter(rel => rel.relationshipOneToOne && rel.otherRelationship); _%>
   <%_ for (const relationship of relationshipsByEntityNeedingOptions) { _%>
     <%_ const otherEntity = relationship.otherEntity _%>
-            expect(comp.<% if (!relationshipsWithCustomUniqueOptions.includes(relationship)) { %><%= otherEntity.entityInstancePlural %>Shared<% } else { %><%= relationship.relationshipFieldNamePlural %><% } %>Collection).toContain(<%= relationship.relationshipName %>);
+            expect(comp.<% if (!relationshipsWithCustomUniqueOptions.includes(relationship)) { %><%= otherEntity.entityInstancePlural %>Shared<% } else { %><%= relationship.relationshipFieldNamePlural %><% } %>Collection).toContainEqual(<%= relationship.relationshipName %>);
   <%_ } _%>
 <%_ } _%>
             expect(comp.<%= entityInstance %>).toEqual(<%= entityInstance %>);
@@ -182,7 +173,8 @@ describe('<%= entityAngularName %> Management Update Component', () => {
     });
 
     describe('save', () => {
-        it('Should call update service on save for existing entity', () => {
+<%_ if (updatableEntity) { _%>
+        it('should call update service on save for existing entity', () => {
             // GIVEN
             const saveSubject = new Subject<HttpResponse<I<%= entityAngularName %>>>();
             const <%= entityInstance %> = <%- testEntityPrimaryKey0 %>;
@@ -205,7 +197,8 @@ describe('<%= entityAngularName %> Management Update Component', () => {
             expect(comp.isSaving).toEqual(false);
         });
 
-        it('Should call create service on save for new entity', () => {
+<%_ } _%>
+        it('should call create service on save for new entity', () => {
             // GIVEN
             const saveSubject = new Subject<HttpResponse<I<%= entityAngularName %>>>();
             const <%= entityInstance %> = <%- testEntityPrimaryKey0 %>;
@@ -227,8 +220,9 @@ describe('<%= entityAngularName %> Management Update Component', () => {
             expect(comp.isSaving).toEqual(false);
             expect(comp.previousState).toHaveBeenCalled();
         });
+<%_ if (updatableEntity) { _%>
 
-        it('Should set isSaving to false on error', () => {
+        it('should set isSaving to false on error', () => {
             // GIVEN
             const saveSubject = new Subject<HttpResponse<I<%= entityAngularName %>>>();
             const <%= entityInstance %> = <%- testEntityPrimaryKey0 %>;
@@ -247,9 +241,10 @@ describe('<%= entityAngularName %> Management Update Component', () => {
             expect(comp.isSaving).toEqual(false);
             expect(comp.previousState).not.toHaveBeenCalled();
         });
+<%_ } _%>
     });
 
-<%_ const trackedRelationships = Object.values(differentRelationships).filter(arr => arr.some(rel => rel.ownerSide && rel.otherEntity.primaryKey));
+<%_ const trackedRelationships = Object.values(relationshipsByOtherEntity).filter(arr => arr.some(rel => rel.persistableRelationship && !rel.otherEntity.embedded));
     if (trackedRelationships.length > 0) {
 _%>
 
@@ -258,9 +253,9 @@ _%>
         const { otherEntity } = relationship[0];
   _%>
         describe('compare<%= otherEntity.entityAngularName %>', () => {
-            it('Should forward to <%= otherEntity.entityInstance %>Service', () => {
-                const entity = <%- this.generateTestEntityPrimaryKey(otherEntity.primaryKey, 0) %>;
-                const entity2 = <%- this.generateTestEntityPrimaryKey(otherEntity.primaryKey, 1) %>;
+            it('should forward to <%= otherEntity.entityInstance %>Service', () => {
+                const entity = <%- otherEntity.tsPrimaryKeySamples[0] %>;
+                const entity2 = <%- otherEntity.tsPrimaryKeySamples[1] %>;
                 jest.spyOn(<%= otherEntity.entityInstance %>Service, 'compare<%= otherEntity.entityAngularName %>');
                 comp.compare<%= otherEntity.entityAngularName %>(entity, entity2);
                 expect(<%= otherEntity.entityInstance %>Service.compare<%= otherEntity.entityAngularName %>).toHaveBeenCalledWith(entity, entity2);

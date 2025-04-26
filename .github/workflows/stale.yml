@@ -1,5 +1,5 @@
 #
-# Copyright 2013-2023 the original author or authors from the JHipster project.
+# Copyright the original author or authors from the JHipster project.
 #
 # This file is part of the JHipster project, see https://www.jhipster.tech/
 # for more information.
@@ -28,7 +28,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@b69b346013879cedbf50c69f572cd85439a41936
+      - uses: actions/stale@v9
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           ascending: true
@@ -40,6 +40,6 @@ jobs:
           days-before-issue-stale: 180
           days-before-pr-stale: 360
           days-before-close: 7
-          exempt-issue-labels: 'area: bug :bug:,status: work in progress,v8,$$ bug-bounty $$'
+          exempt-issue-labels: 'area: bug :bug:,status: work in progress,$$ bug-bounty $$'
           exempt-pr-labels: 'pr: bug-fix,status: work in progress'
-          operations-per-run: 10
+          operations-per-run: 60

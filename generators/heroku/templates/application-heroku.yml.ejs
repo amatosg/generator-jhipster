@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -77,18 +77,6 @@ spring:
 <%_ if (searchEngineElasticsearch) { _%>
   elasticsearch:
     uris: ${BONSAI_URL}
-<%_ } _%>
-<%_ if (useOkta) { _%>
-  security:
-    oauth2:
-      client:
-        provider:
-          oidc:
-            issuer-uri: ${OKTA_OAUTH2_ISSUER}
-        registration:
-          oidc:
-            client-id: ${OKTA_OAUTH2_CLIENT_ID_WEB}
-            client-secret: ${OKTA_OAUTH2_CLIENT_SECRET_WEB}
 <%_ } _%>
 server:
   port: ${PORT:8080}

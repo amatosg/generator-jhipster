@@ -35,6 +35,11 @@ updates:
       # Should match supported node major version.
       - dependency-name: '@types/node'
         versions: ['>=19']
+    groups:
+      eslint:
+        patterns:
+          - '@eslint/*'
+          - 'eslint'
 
   - package-ecosystem: 'npm'
     directory: '/generators/generate-blueprint/resources/'
@@ -65,6 +70,30 @@ updates:
       # Should match generated project node major version.
       - dependency-name: '@types/node'
         versions: ['>=19']
+    groups:
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-architects/*'
+          - '@angular-builders/*'
+          - '@angular-devkit/*'
+          - '@fortawesome/angular-fontawesome'
+          - '@ng-bootstrap/*'
+          - 'ngx-cookie-service'
+          - 'ngx-infinite-scroll'
+          - 'typescript'
+          - 'zone.js'
+      fortawesome:
+        patterns:
+          - '@fortawesome/fontawesome-svg-core'
+          - '@fortawesome/free-solid-svg-icons'
+      eslint:
+        patterns:
+          - '@eslint/*'
+          - 'eslint'
+      ngx-translate:
+        patterns:
+          - '@ngx-translate/*'
 
   - package-ecosystem: 'npm'
     directory: '/generators/common/resources/'
@@ -92,6 +121,18 @@ updates:
       - 'skip-changelog'
 
   - package-ecosystem: 'npm'
+    directory: '/generators/javascript/resources/'
+    rebase-strategy: 'auto'
+    schedule:
+      interval: 'daily'
+      time: '00:00'
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    labels:
+      - 'theme: dependencies'
+      - 'skip-changelog'
+
+  - package-ecosystem: 'npm'
     directory: '/generators/react/resources/'
     rebase-strategy: 'auto'
     schedule:
@@ -107,6 +148,24 @@ updates:
       # Should match generated project node major version.
       - dependency-name: '@types/node'
         versions: ['>=19']
+      # https://github.com/jhipster/generator-jhipster/issues/27464#issuecomment-2400505558, https://github.com/twbs/bootstrap/issues/40849
+      - dependency-name: 'sass'
+        versions: ['*']
+    groups:
+      eslint:
+        patterns:
+          - '@eslint/*'
+          - 'eslint'
+      fortawesome:
+        patterns:
+          - '@fortawesome/fontawesome-svg-core'
+          - '@fortawesome/free-solid-svg-icons'
+      react:
+        patterns:
+          - '@reduxjs/*'
+          - '*-redux'
+          - 'redux'
+          - 'redux-*'
 
   - package-ecosystem: 'npm'
     directory: '/generators/vue/resources/'
@@ -124,15 +183,38 @@ updates:
       # https://github.com/bootstrap-vue/bootstrap-vue/issues/5507
       - dependency-name: 'bootstrap'
         versions: ['>=5']
+      # Bootstrap v4 issue https://github.com/jhipster/generator-jhipster/issues/23770, https://github.com/twbs/bootstrap/issues/39028, https://github.com/jhipster/generator-jhipster/issues/27464#issuecomment-2400505558, https://github.com/twbs/bootstrap/issues/40849
+      - dependency-name: 'sass'
+        versions: ['*']
       # Should match generated project node major version.
       - dependency-name: '@types/node'
         versions: ['>=19']
+    groups:
+      eslint:
+        patterns:
+          - '@eslint/*'
+          - 'eslint'
+      fortawesome:
+        patterns:
+          - '@fortawesome/fontawesome-svg-core'
+          - '@fortawesome/free-solid-svg-icons'
 
   - package-ecosystem: 'docker'
     directory: '/generators/server/resources/'
     schedule:
       interval: 'daily'
       time: '00:20'
+    open-pull-requests-limit: 5
+    labels:
+      - 'theme: dependencies'
+      - 'theme: docker :whale:'
+      - 'skip-changelog'
+
+  - package-ecosystem: 'docker'
+    directory: '/test-integration/sonar-pr/'
+    schedule:
+      interval: 'daily'
+      time: '00:30'
     open-pull-requests-limit: 5
     labels:
       - 'theme: dependencies'
@@ -162,6 +244,17 @@ updates:
       - 'theme: java'
       - 'skip-changelog'
 
+  - package-ecosystem: 'gradle'
+    directory: '/generators/spring-cache/resources/'
+    schedule:
+      interval: 'daily'
+      time: '08:30'
+    open-pull-requests-limit: 5
+    labels:
+      - 'theme: dependencies'
+      - 'theme: cache'
+      - 'skip-changelog'
+
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
@@ -171,4 +264,14 @@ updates:
     labels:
       - 'theme: github_actions'
       - 'theme: CI builds'
+      - 'skip-changelog'
+
+  - package-ecosystem: 'gradle'
+    directory: '/generators/java/generators/graalvm/resources/'
+    schedule:
+      interval: 'daily'
+      time: '08:30'
+    open-pull-requests-limit: 5
+    labels:
+      - 'theme: dependencies'
       - 'skip-changelog'

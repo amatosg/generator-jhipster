@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -19,10 +19,16 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 
 import initStore from 'app/config/store';
 import Header from './header';
+<%_ if (applicationTypeGateway && microfrontend) { _%>
+
+jest.mock('@module-federation/utilities', () => ({
+  importRemote: jest.fn(() => Promise.reject(new Error('Test only'))),
+}));
+<%_ } _%>
 
 describe('Header', () => {
   let mountedWrapper;
@@ -34,22 +40,22 @@ describe('Header', () => {
 <%_ } _%>
     ribbonEnv: 'dev',
     isInProduction: false,
-    isOpenAPIEnabled: true
+    isOpenAPIEnabled: true,
   };
   const prodProps = {
     ...devProps,
     ribbonEnv: 'prod',
     isInProduction: true,
-    isOpenAPIEnabled: false
+    isOpenAPIEnabled: false,
   };
   const userProps = {
     ...prodProps,
-    isAdmin: false
+    isAdmin: false,
   };
   const guestProps = {
     ...prodProps,
     isAdmin: false,
-    isAuthenticated: false
+    isAuthenticated: false,
   };
 
   const wrapper = (props = devProps) => {
@@ -60,7 +66,7 @@ describe('Header', () => {
           <MemoryRouter>
             <Header {...props} />
           </MemoryRouter>
-        </Provider>
+        </Provider>,
       );
       mountedWrapper = container.innerHTML;
     }
@@ -127,5 +133,4 @@ describe('Header', () => {
     // Find AccountMenu component
     expect(html).toContain('account-menu');
   });
-
 });

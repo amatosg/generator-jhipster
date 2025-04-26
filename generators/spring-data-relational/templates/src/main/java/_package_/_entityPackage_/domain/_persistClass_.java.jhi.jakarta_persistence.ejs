@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -84,7 +84,7 @@ import org.hibernate.type.SqlTypes;
     @NotNull
       <%_ } _%>
   <%_ } else if (relationship.relationshipManyToMany) { -%>
-    @ManyToMany(fetch = FetchType.LAZY<% if (!relationship.ownerSide) { %>, mappedBy = "<%= relationship.otherEntityRelationshipNamePlural %>"<% } %>)
+    @ManyToMany(fetch = FetchType.LAZY<% if (!relationship.ownerSide) { %>, mappedBy = "<%= relationship.otherRelationship.propertyName %>"<% } %>)
       <%_ if (relationship.ownerSide) { _%>
         <%_ if (relationship.relationshipValidate && relationship.relationshipRequired) { _%>
     @NotNull

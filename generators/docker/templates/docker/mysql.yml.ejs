@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -23,17 +23,19 @@ services:
     image: <%- dockerContainers.mysql %>
     volumes:
       - ./config/mysql:/etc/mysql/conf.d
-    #   - ~/volumes/jhipster/<%= baseName %>/mysql/:/var/lib/mysql/
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_DATABASE=<%= baseName.toLowerCase() %>
+<%_ if (prodDatabasePassword) { _%>
+      - MYSQL_PASSWORD=<%- prodDatabasePassword %>
+<%_ } _%>
     # If you want to expose these ports outside your dev PC,
     # remove the "127.0.0.1:" prefix
     ports:
       - 127.0.0.1:3306:3306
-    command: mysqld --lower_case_table_names=1 --skip-ssl --character_set_server=utf8mb4 --explicit_defaults_for_timestamp
+    command: mysqld --lower_case_table_names=1 --skip-mysqlx --character_set_server=utf8mb4 --explicit_defaults_for_timestamp
     healthcheck:
-      test: ["CMD", "mysql", "-e", "SHOW DATABASES;"]
+      test: ['CMD-SHELL', 'mysql -e "SHOW DATABASES;" && sleep 5']
       interval: 5s
-      timeout: 5s
+      timeout: 10s
       retries: 10

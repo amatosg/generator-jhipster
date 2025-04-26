@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,13 +16,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
-<?xml version="1.0" encoding="utf-8"?>
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
-                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+<%- include('/liquibase-changelog-header') -%>
 <%_ if (addedFields && addedFields.length) { _%>
 
     <!--
@@ -31,15 +25,15 @@
     <changeSet id="<%= changelogDate %>-1-add-columns" author="jhipster">
         <addColumn tableName="<%= entity.entityTableName %>">
     <%_ for (field of addedFields) { _%>
-            <column name="<%= field.columnName %>" type="<%= field.columnType %>"<%- this.formatAsLiquibaseRemarks(field.documentation, true) %>/>
+            <column name="<%= field.columnName %>" type="<%= field.columnType %>"<%- this.createDefaultValueLiquibaseAttribute(field, true) -%><%- this.formatAsLiquibaseRemarks(field.documentation, true) %>/>
         <%_ if (field.shouldCreateContentType) { _%>
             <column name="<%= field.columnName %>_content_type" type="varchar(255)"/>
         <%_ }
     } // End for (field of addedFields) _%>
         </addColumn>
     <%_ for (field of addedFields) {
-        if (field.fieldType === 'ZonedDateTime' || field.fieldType === 'Instant') { _%>
-        <dropDefaultValue tableName="<%= entity.entityTableName %>" columnName="<%= field.columnName %>" columnDataType="datetime"/>
+        if (field.shouldDropDefaultValue) { _%>
+        <dropDefaultValue tableName="<%= entity.entityTableName %>" columnName="<%= field.columnName %>" columnDataType="${datetimeType}"/>
         <%_ } _%>
     <%_ } _%>
     </changeSet>

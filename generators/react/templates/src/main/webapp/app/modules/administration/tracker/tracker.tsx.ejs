@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -26,10 +26,10 @@ export const TrackerPage = () => {
 
   return (
       <div>
-        <h2>
+        <h2 data-cy="trackerPageHeading">
           <Translate contentKey="tracker.title">Real-time user activities</Translate>
         </h2>
-        <table className="table table-sm table-striped table-bordered">
+        <table className="table table-sm table-striped table-bordered" data-cy="trackerTable">
           <thead>
             <tr>
               <th>

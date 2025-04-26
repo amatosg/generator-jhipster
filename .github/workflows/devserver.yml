@@ -22,44 +22,52 @@ concurrency:
   # Group PRs by head_ref, push to main branch by commit id, and others branch by ref.
   group: ${{ github.workflow }}-${{ github.head_ref || (github.ref == 'refs/heads/main' && github.sha) || github.ref }}
   cancel-in-progress: true
+env:
+  NODE_OPTIONS: --dns-result-order=ipv4first
+  FORCE_COLOR: 2
 on:
   push:
-    branches-ignore:
-      - 'dependabot/**'
-      - 'skip_ci*'
+    branches:
+      - 'main'
+      - '**maintenance'
     paths:
-      - 'generators/*client/**'
+      - '.github/workflows/devserver.yml'
+      - 'generators/angular/**'
+      - 'generators/client/**'
+      - 'generators/javascript/**'
+      - 'generators/react/**'
+      - 'generators/vue/**'
+      - 'generators/*'
   pull_request:
     types: [closed, opened, synchronize, reopened]
     branches:
       - '*'
 jobs:
   build-matrix:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.build.outputs.matrix }}
+      empty-matrix: ${{ steps.build.outputs.empty-matrix }}
     steps:
       - name: 'SETUP: Checkout generator-jhipster'
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: 'Build matrix'
-        id: build
-        uses: ./.github/actions/build-matrix
-        with:
-          workflow-file-prefix: devserver
+      - run: npm ci --ignore-scripts
+      - id: build
+        run: bin/jhipster.cjs github-build-matrix devserver --event-name ${{ github.event_name }}
   applications:
-    name: ${{ matrix.app-sample }}
+    name: ${{ matrix.job-name }}
     needs: build-matrix
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: ${{ github.workspace }}/app
     timeout-minutes: 40
     strategy:
       fail-fast: false
-      matrix: ${{fromJson(needs.build-matrix.outputs.matrix)}}
-    if: needs.build-matrix.outputs.client == 'true'
+      matrix: ${{ fromJson(needs.build-matrix.outputs.matrix) }}
+    if: fromJson(needs.build-matrix.outputs.matrix).include[0] != null
     steps:
       #----------------------------------------------------------------------
       # Install all tools and check configuration
@@ -69,86 +77,41 @@ jobs:
         with:
           path: generator-jhipster
           fetch-depth: 2
-      - name: 'SETUP: environment'
-        id: setup
-        uses: ./generator-jhipster/.github/actions/setup
+      - uses: jhipster/actions/setup-runner@v0
         with:
-          application-sample: ${{ matrix.setup-application-sample }}
-          entities-sample: ${{ matrix.setup-entities-sample }}
-          jdl-entities-sample: ${{ matrix.setup-jdl-entities-sample }}
-          jdl-sample: ${{ matrix.setup-jdl-sample }}
-          application-environment: ${{ matrix.setup-application-environment }}
-          application-packaging: ${{ matrix.setup-application-packaging }}
-      - uses: actions/setup-node@v3
-        with:
-          node-version: ${{ steps.setup.outputs.node-version }}
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: ${{ steps.setup.outputs.java-version }}
-      - name: 'SETUP: load npm cache'
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            ~/.cache/Cypress/
-          key: ${{ runner.os }}-node-${{ steps.setup.outputs.date }}-${{ matrix.cache }}-${{ hashFiles('generator-jhipster/package-lock.json', 'generator-jhipster/**/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ steps.setup.outputs.date }}-${{ matrix.cache }}-
-            ${{ runner.os }}-node-${{ steps.setup.outputs.date }}-
-            ${{ runner.os }}-node-${{ steps.setup.outputs.date }}
-      - name: 'SETUP: load maven cache'
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ steps.setup.outputs.date }}-${{ hashFiles('generator-jhipster/**/pom.xml.ejs') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-${{ steps.setup.outputs.date }}-
-            ${{ runner.os }}-maven-${{ steps.setup.outputs.date }}
-      - name: 'SETUP: load gradle cache'
-        if: contains(matrix.app-sample, 'gradle')
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ steps.setup.outputs.date }}-${{ hashFiles('generator-jhipster/**/build.gradle.ejs') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-${{ steps.setup.outputs.date }}-
-            ${{ runner.os }}-gradle-${{ steps.setup.outputs.date }}
-      - name: 'TOOLS: configure tools installed by the system'
-        run: $JHI_SCRIPTS/03-system.sh
-      - name: 'TOOLS: configure git'
-        run: $JHI_SCRIPTS/04-git-config.sh
+          node-version: ${{ matrix.node-version }}
+          java-version: ${{ matrix.java-version }}
+          npm-version: ${{ matrix.npm-version }}
+          maven-cache: true
+          binary-dir: ${{ github.workspace }}/generator-jhipster/bin
       #----------------------------------------------------------------------
       # Install JHipster and generate project+entities
       #----------------------------------------------------------------------
-      - name: 'GENERATION: install JHipster'
-        run: $JHI_SCRIPTS/10-install-jhipster.sh
-      - name: 'GENERATION: config'
-        run: $JHI_SCRIPTS/11-generate-config.sh
+      - run: npm ci --ignore-scripts
+        working-directory: ${{ github.workspace }}/generator-jhipster
       - name: 'GENERATION: project'
-        run: $JHI_SCRIPTS/12-generate-project.sh ${{ matrix.extra-args }} ${{ matrix.new-extra-args }}
-      - name: 'GENERATION: jhipster info'
-        run: $JHI_SCRIPTS/14-jhipster-info.sh
+        run: jhipster.cjs generate-sample ${{ matrix.sample }} --skip-jhipster-dependencies --skip-install ${{ matrix.args }}
+        env:
+          JHIPSTER_DEPENDENCIES_VERSION: ${{ matrix.jhipster-bom-cicd-version }}
+          JHI_JWT_SECRET_KEY: ${{ matrix.jwt-secret-key }}
+      - run: jhipster.cjs info
       #----------------------------------------------------------------------
       # Launch tests
       #----------------------------------------------------------------------
+      - uses: jhipster/actions/build-jhipster-bom@v0
+        with:
+          jhipster-bom-ref: ${{ matrix.jhipster-bom-branch }}
       - name: 'E2E: Run'
         id: e2e
-        run: npm run e2e:devserver --if-present
-      - name: 'BACKEND: Store failure logs'
-        uses: actions/upload-artifact@v3
-        if: always() && steps.backend.outcome == 'failure'
-        with:
-          name: log-${{ matrix.app-sample }}
-          path: ${{ steps.setup.outputs.application-path }}/*/test-results/**/*.xml
+        run: |
+          ./npmw install
+          ./npmw run e2e:devserver --if-present
       - name: 'E2E: Store failure screenshots'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always() && steps.e2e.outcome == 'failure'
         with:
-          name: screenshots-${{ matrix.app-sample }}
-          path: ${{ steps.setup.outputs.application-path }}/*/cypress/screenshots
+          name: screenshots-${{ matrix.job-name }}
+          path: ${{ github.workspace }}/app/*/cypress/screenshots
   check-dev-server:
     permissions:
       contents: none

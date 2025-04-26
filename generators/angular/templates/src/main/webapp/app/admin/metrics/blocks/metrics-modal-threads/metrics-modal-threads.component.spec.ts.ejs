@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,7 +17,7 @@
  limitations under the License.
 -%>
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { MetricsModalThreadsComponent } from './metrics-modal-threads.component';
@@ -30,8 +30,8 @@ describe('MetricsModalThreadsComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, MetricsModalThreadsComponent],
-      providers: [NgbActiveModal],
+      imports: [MetricsModalThreadsComponent],
+      providers: [provideHttpClient(), NgbActiveModal],
     })
       .overrideTemplate(MetricsModalThreadsComponent, '')
       .compileComponents();
@@ -47,86 +47,86 @@ describe('MetricsModalThreadsComponent', () => {
     it('should count threads on init', () => {
       // GIVEN
       comp.threads = [
-        { 
-            threadName: '',
-            threadId: 1,
-            blockedTime: 1,
-            blockedCount: 1,
-            waitedTime: 1,
-            waitedCount: 1,
-            lockName: 'lock1',
-            lockOwnerId: 1,
-            lockOwnerName: 'lock1',
-            daemon: true,
-            inNative: true,
-            suspended: true,
-            threadState: ThreadState.Blocked,
-            priority: 1,
-            stackTrace: [],
-            lockedMonitors: [],
-            lockedSynchronizers: [],
-            lockInfo: null
+        {
+          threadName: '',
+          threadId: 1,
+          blockedTime: 1,
+          blockedCount: 1,
+          waitedTime: 1,
+          waitedCount: 1,
+          lockName: 'lock1',
+          lockOwnerId: 1,
+          lockOwnerName: 'lock1',
+          daemon: true,
+          inNative: true,
+          suspended: true,
+          threadState: ThreadState.Blocked,
+          priority: 1,
+          stackTrace: [],
+          lockedMonitors: [],
+          lockedSynchronizers: [],
+          lockInfo: null,
         },
-        { 
-            threadName: '',
-            threadId: 2,
-            blockedTime: 2,
-            blockedCount: 2,
-            waitedTime: 2,
-            waitedCount: 2,
-            lockName: 'lock2',
-            lockOwnerId: 2,
-            lockOwnerName: 'lock2',
-            daemon: false,
-            inNative: false,
-            suspended: false,
-            threadState: ThreadState.Runnable,
-            priority: 2,
-            stackTrace: [],
-            lockedMonitors: [],
-            lockedSynchronizers: [],
-            lockInfo: null
+        {
+          threadName: '',
+          threadId: 2,
+          blockedTime: 2,
+          blockedCount: 2,
+          waitedTime: 2,
+          waitedCount: 2,
+          lockName: 'lock2',
+          lockOwnerId: 2,
+          lockOwnerName: 'lock2',
+          daemon: false,
+          inNative: false,
+          suspended: false,
+          threadState: ThreadState.Runnable,
+          priority: 2,
+          stackTrace: [],
+          lockedMonitors: [],
+          lockedSynchronizers: [],
+          lockInfo: null,
         },
-        { 
-            threadName: '',
-            threadId: 3,
-            blockedTime: 3,
-            blockedCount: 3,
-            waitedTime: 3,
-            waitedCount: 3,
-            lockName: 'lock3',
-            lockOwnerId: 3,
-            lockOwnerName: 'lock3',
-            daemon: false,
-            inNative: false,
-            suspended: false,
-            threadState: ThreadState.TimedWaiting,
-            priority: 3,
-            stackTrace: [],
-            lockedMonitors: [],
-            lockedSynchronizers: [],
-            lockInfo: null
+        {
+          threadName: '',
+          threadId: 3,
+          blockedTime: 3,
+          blockedCount: 3,
+          waitedTime: 3,
+          waitedCount: 3,
+          lockName: 'lock3',
+          lockOwnerId: 3,
+          lockOwnerName: 'lock3',
+          daemon: false,
+          inNative: false,
+          suspended: false,
+          threadState: ThreadState.TimedWaiting,
+          priority: 3,
+          stackTrace: [],
+          lockedMonitors: [],
+          lockedSynchronizers: [],
+          lockInfo: null,
         },
-        { 
-            threadName: '',
-            threadId: 4,
-            blockedTime: 4,
-            blockedCount: 4,
-            waitedTime: 4,
-            waitedCount: 4,
-            lockName: 'lock4',
-            lockOwnerId: 4,
-            lockOwnerName: 'lock4',
-            daemon: false,
-            inNative: false,
-            suspended: false,
-            threadState: ThreadState.Waiting,
-            priority: 4,
-            stackTrace: [],
-            lockedMonitors: [],
-            lockedSynchronizers: [],
-            lockInfo: null
-        }
+        {
+          threadName: '',
+          threadId: 4,
+          blockedTime: 4,
+          blockedCount: 4,
+          waitedTime: 4,
+          waitedCount: 4,
+          lockName: 'lock4',
+          lockOwnerId: 4,
+          lockOwnerName: 'lock4',
+          daemon: false,
+          inNative: false,
+          suspended: false,
+          threadState: ThreadState.Waiting,
+          priority: 4,
+          stackTrace: [],
+          lockedMonitors: [],
+          lockedSynchronizers: [],
+          lockInfo: null,
+        },
       ];
 
       // WHEN
@@ -199,29 +199,31 @@ describe('MetricsModalThreadsComponent', () => {
   });
 
   describe('getThreads', () => {
+    // GIVEN
+    const thread1 = {
+      threadName: '',
+      threadId: 1,
+      blockedTime: 1,
+      blockedCount: 1,
+      waitedTime: 1,
+      waitedCount: 1,
+      lockName: 'lock1',
+      lockOwnerId: 1,
+      lockOwnerName: 'lock1',
+      daemon: true,
+      inNative: true,
+      suspended: true,
+      threadState: ThreadState.Blocked,
+      priority: 1,
+      stackTrace: [],
+      lockedMonitors: [],
+      lockedSynchronizers: [],
+      lockInfo: null,
+    };
+
     it('should return blocked threads', () => {
       // GIVEN
-      const thread1 = { 
-        threadName: '',
-        threadId: 1,
-        blockedTime: 1,
-        blockedCount: 1,
-        waitedTime: 1,
-        waitedCount: 1,
-        lockName: 'lock1',
-        lockOwnerId: 1,
-        lockOwnerName: 'lock1',
-        daemon: true,
-        inNative: true,
-        suspended: true,
-        threadState: ThreadState.Blocked,
-        priority: 1,
-        stackTrace: [],
-        lockedMonitors: [],
-        lockedSynchronizers: [],
-        lockInfo: null
-      };
-      const thread2 = { 
+      const thread2 = {
         threadName: '',
         threadId: 2,
         blockedTime: 2,
@@ -239,12 +241,9 @@ describe('MetricsModalThreadsComponent', () => {
         stackTrace: [],
         lockedMonitors: [],
         lockedSynchronizers: [],
-        lockInfo: null
+        lockInfo: null,
       };
-      comp.threads = [
-        thread1,
-        thread2
-      ];
+      comp.threads = [thread1, thread2];
       comp.threadStateFilter = ThreadState.Blocked;
 
       // WHEN
@@ -268,27 +267,7 @@ describe('MetricsModalThreadsComponent', () => {
 
     it('should return all threads if there is no filter', () => {
       // GIVEN
-      const thread1 = { 
-        threadName: '',
-        threadId: 1,
-        blockedTime: 1,
-        blockedCount: 1,
-        waitedTime: 1,
-        waitedCount: 1,
-        lockName: 'lock1',
-        lockOwnerId: 1,
-        lockOwnerName: 'lock1',
-        daemon: true,
-        inNative: true,
-        suspended: true,
-        threadState: ThreadState.Blocked,
-        priority: 1,
-        stackTrace: [],
-        lockedMonitors: [],
-        lockedSynchronizers: [],
-        lockInfo: null
-      };
-      const thread2 = { 
+      const thread2 = {
         threadName: '',
         threadId: 2,
         blockedTime: 2,
@@ -306,12 +285,9 @@ describe('MetricsModalThreadsComponent', () => {
         stackTrace: [],
         lockedMonitors: [],
         lockedSynchronizers: [],
-        lockInfo: null
+        lockInfo: null,
       };
-      comp.threads = [
-        thread1,
-        thread2
-      ];
+      comp.threads = [thread1, thread2];
       comp.threadStateFilter = undefined;
 
       // WHEN
@@ -323,7 +299,7 @@ describe('MetricsModalThreadsComponent', () => {
 
     it('should return an empty array if there are no threads to filter', () => {
       // GIVEN
-      comp.threads = undefined
+      comp.threads = undefined;
       comp.threadStateFilter = ThreadState.Blocked;
 
       // WHEN
@@ -346,5 +322,4 @@ describe('MetricsModalThreadsComponent', () => {
       expect(mockActiveModal.dismiss).toHaveBeenCalled();
     });
   });
-
 });

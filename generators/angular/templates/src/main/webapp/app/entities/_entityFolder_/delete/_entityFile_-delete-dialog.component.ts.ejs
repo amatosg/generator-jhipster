@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,7 +16,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -26,14 +26,14 @@ import { <%= entityAngularName %>Service } from '../service/<%= entityFileName %
 import { ITEM_DELETED_EVENT } from 'app/config/navigation.constants';
 
 @Component({
-    standalone: true,
     templateUrl: './<%= entityFileName %>-delete-dialog.component.html',
     imports: [SharedModule, FormsModule],
 })
 export class <%= entityAngularName %>DeleteDialogComponent {
     <%= entityInstance %>?: I<%= entityAngularName %>;
 
-    constructor(protected <%= entityInstance %>Service: <%= entityAngularName %>Service, protected activeModal: NgbActiveModal) {}
+    protected <%= entityInstance %>Service = inject(<%= entityAngularName %>Service);
+    protected activeModal = inject(NgbActiveModal);
 
     cancel(): void {
         this.activeModal.dismiss();

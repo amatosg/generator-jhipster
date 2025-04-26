@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,7 +16,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
 import { Storage } from 'react-jhipster';
 
 const TIMEOUT = 1 * 60 * 1000;
@@ -34,9 +34,9 @@ const setupAxiosInterceptors = onUnauthenticated => {
     return config;
   };
   const onResponseSuccess = response => response;
-  const onResponseError = err => {
+  const onResponseError = (err: AxiosError) => {
     const status = err.status || (err.response ? err.response.status : 0);
-    if (status === 403 || status === 401) {
+    if (status === 401) {
       onUnauthenticated();
     }
     return Promise.reject(err);

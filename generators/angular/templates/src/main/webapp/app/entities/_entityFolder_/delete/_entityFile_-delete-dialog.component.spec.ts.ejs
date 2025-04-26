@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,13 +17,12 @@
  limitations under the License.
 -%>
 <%_
-const tsKeyId = this.generateTestEntityId(primaryKey.type);
+const tsKeyId = primaryKey.tsSampleValues[0];
 _%>
 jest.mock('@ng-bootstrap/ng-bootstrap');
 
 import { ComponentFixture, TestBed, inject, fakeAsync, tick } from '@angular/core/testing';
-import { HttpResponse } from '@angular/common/http';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClient, HttpResponse } from '@angular/common/http';
 import { of } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -39,8 +38,8 @@ describe('<%= entityAngularName %> Management Delete Component', () => {
 
     beforeEach(() => {
         TestBed.configureTestingModule({
-            imports: [HttpClientTestingModule, <%= entityAngularName %>DeleteDialogComponent],
-            providers: [NgbActiveModal]
+            imports: [<%= entityAngularName %>DeleteDialogComponent],
+            providers: [provideHttpClient(), NgbActiveModal]
         })
         .overrideTemplate(<%= entityAngularName %>DeleteDialogComponent, '')
         .compileComponents();
@@ -51,7 +50,7 @@ describe('<%= entityAngularName %> Management Delete Component', () => {
     });
 
     describe('confirmDelete', () => {
-        it('Should call delete service on confirmDelete',
+        it('should call delete service on confirmDelete',
             inject([],
                 fakeAsync(() => {
                     // GIVEN
@@ -68,7 +67,7 @@ describe('<%= entityAngularName %> Management Delete Component', () => {
             )
         );
 
-        it('Should not call delete service on clear', () => {
+        it('should not call delete service on clear', () => {
             // GIVEN
             jest.spyOn(service, 'delete');
 

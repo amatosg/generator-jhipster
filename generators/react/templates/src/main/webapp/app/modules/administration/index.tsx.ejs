@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -18,7 +18,7 @@
 -%>
 import React from 'react';
 
-import { Route } from 'react-router-dom';
+import { Route } from 'react-router';
 import ErrorBoundaryRoutes from 'app/shared/error/error-boundary-routes';
 <%_ if (generateUserManagement) { _%>
 import UserManagement from './user-management';
@@ -30,7 +30,7 @@ import Metrics from './metrics/metrics';
 import Configuration from './configuration/configuration';
 <%_ } _%>
 import Docs from './docs/docs';
-<%_ if (applicationTypeGateway && serviceDiscoveryAny) { _%>
+<%_ if (applicationTypeGateway && gatewayServicesApiAvailable) { _%>
 import Gateway from './gateway/gateway';
 <%_ } _%>
 <%_ if (communicationSpringWebsocket) { _%>
@@ -46,7 +46,7 @@ const AdministrationRoutes = () => (
 <%_ if (communicationSpringWebsocket) { _%>
       <Route path="tracker" element={<Tracker />} />
 <%_ } _%>
-<%_ if (applicationTypeGateway && serviceDiscoveryAny) { _%>
+<%_ if (applicationTypeGateway && gatewayServicesApiAvailable) { _%>
       <Route path="gateway" element={<Gateway />} />
 <%_ } _%>
 <%_ if (withAdminUi) { _%>

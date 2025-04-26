@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2023 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,30 +17,29 @@
  * limitations under the License.
  */
 import assert from 'assert';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import path, { dirname, resolve } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import chalk from 'chalk';
-import * as _ from 'lodash-es';
+import { cloneDeep, mergeWith } from 'lodash-es';
 import Environment from 'yeoman-environment';
 import { QueuedAdapter } from '@yeoman/adapter';
 
+import { createJHipsterLogger, packageNameToNamespace } from '../generators/base/support/index.js';
+import { loadBlueprintsFromConfiguration, mergeBlueprints, parseBlueprintInfo } from '../generators/base/internal/index.js';
+import { readCurrentPathYoRcFile } from '../lib/utils/yo-rc.js';
 import { CLI_NAME, logger } from './utils.mjs';
-import { createJHipsterLogger, packageNameToNamespace } from '../generators/base/support/index.mjs';
-import { parseBlueprintInfo, loadBlueprintsFromConfiguration, mergeBlueprints } from '../generators/base/internal/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const jhipsterDevBlueprintPath = process.env.JHIPSTER_DEV_BLUEPRINT === 'true' ? path.join(__dirname, '../.blueprint') : undefined;
 const devBlueprintNamespace = '@jhipster/jhipster-dev';
-
-function loadYoRc(filePath = '.yo-rc.json') {
-  if (!existsSync(filePath)) {
-    return undefined;
-  }
-  return JSON.parse(readFileSync(filePath, { encoding: 'utf-8' }));
-}
+const localBlueprintNamespace = '@jhipster/jhipster-local';
+const defaultLookupOptions = {
+  lookups: ['generators', 'generators/*/generators'],
+  customizeNamespace: ns => ns?.replaceAll(':generators:', ':'),
+};
 
 const createEnvironment = (options = {}) => {
   options.adapter = options.adapter ?? new QueuedAdapter({ log: createJHipsterLogger() });
@@ -48,7 +47,11 @@ const createEnvironment = (options = {}) => {
 };
 
 export default class EnvironmentBuilder {
+  /** @type {Environment} */
+  env;
   devBlueprintPath;
+  localBlueprintPath;
+  localBlueprintExists;
 
   /**
    * Creates a new EnvironmentBuilder with a new Environment.
@@ -72,7 +75,7 @@ export default class EnvironmentBuilder {
    * const promise = require('yeoman-test').create('jhipster:app', {}, {createEnv: EnvironmentBuilder.createEnv}).run();
    *
    * @param {...any} args - Arguments passed to Environment.createEnv().
-   * @return {EnvironmentBuilder} envBuilder
+   * @return {Promise<Environment>} envBuilder
    */
   static async createEnv(...args) {
     const builder = await EnvironmentBuilder.createDefaultBuilder(...args);
@@ -89,6 +92,12 @@ export default class EnvironmentBuilder {
     return EnvironmentBuilder.create(...args).prepare();
   }
 
+  static async run(args, generatorOptions = {}, envOptions = {}) {
+    const envBuilder = await EnvironmentBuilder.createDefaultBuilder(envOptions);
+    const env = envBuilder.getEnvironment();
+    await env.run(args, generatorOptions);
+  }
+
   /**
    * Class to manipulate yeoman environment for jhipster needs.
    * - Registers jhipster generators.
@@ -101,7 +110,12 @@ export default class EnvironmentBuilder {
   }
 
   async prepare({ blueprints, lookups, devBlueprintPath = jhipsterDevBlueprintPath } = {}) {
-    this.devBlueprintPath = existsSync(devBlueprintPath) ? devBlueprintPath : undefined;
+    const devBlueprintEnabled = existsSync(devBlueprintPath);
+    this.env.sharedOptions.devBlueprintEnabled = devBlueprintEnabled;
+    this.devBlueprintPath = devBlueprintEnabled ? devBlueprintPath : undefined;
+    this.localBlueprintPath = path.join(process.cwd(), '.blueprint');
+    this.localBlueprintExists = this.localBlueprintPath !== this.devBlueprintPath && existsSync(this.localBlueprintPath);
+
     await this._lookupJHipster();
     await this._lookupLocalBlueprint();
     await this._lookupDevBlueprint();
@@ -115,7 +129,7 @@ export default class EnvironmentBuilder {
   getBlueprintsNamespaces() {
     return [
       ...Object.keys(this._blueprintsWithVersion).map(packageName => packageNameToNamespace(packageName)),
-      '@jhipster/jhipster-local',
+      localBlueprintNamespace,
       ...(this.devBlueprintPath ? [devBlueprintNamespace] : []),
     ];
   }
@@ -149,7 +163,12 @@ export default class EnvironmentBuilder {
       packagePath = path.join(__dirname, '../..');
       lookup = `${sourceRoot}/generators`;
     }
-    (await this.env.lookup({ packagePaths: [packagePath], lookups: [lookup] })).forEach(generator => {
+    const generators = await this.env.lookup({
+      ...defaultLookupOptions,
+      packagePaths: [packagePath],
+      lookups: [lookup, `${lookup}/*/generators`],
+    });
+    generators.forEach(generator => {
       // Verify jhipster generators namespace.
       assert(
         generator.namespace.startsWith(`${CLI_NAME}:`),
@@ -160,12 +179,14 @@ export default class EnvironmentBuilder {
   }
 
   async _lookupLocalBlueprint() {
-    const localBlueprintPath = path.join(process.cwd(), '.blueprint');
-    if (existsSync(localBlueprintPath)) {
+    if (this.localBlueprintExists) {
       // Register jhipster generators.
-      const generators = await this.env.lookup({ packagePaths: [localBlueprintPath], lookups: ['.'] });
+      const generators = await this.env.lookup({
+        packagePaths: [this.localBlueprintPath],
+        lookups: ['.', './*/generators'],
+        customizeNamespace: ns => ns?.replaceAll(':generators:', ':').replace('.blueprint', '@jhipster/jhipster-local'),
+      });
       if (generators.length > 0) {
-        this.env.alias(/^@jhipster\/jhipster-local(:(.*))?$/, '.blueprint$1');
         this.env.sharedOptions.composeWithLocalBlueprint = true;
       }
     }
@@ -174,17 +195,18 @@ export default class EnvironmentBuilder {
 
   async _lookupDevBlueprint() {
     // Register jhipster generators.
-    const generators = await this.env.lookup({ packagePaths: [this.devBlueprintPath], lookups: ['.'] });
-    if (generators.length > 0) {
-      this.env.alias(/^@jhipster\/jhipster-dev(:(.*))?$/, '.blueprint$1');
-    }
+    await this.env.lookup({
+      packagePaths: [this.devBlueprintPath],
+      lookups: ['.'],
+      customizeNamespace: ns => ns?.replace('.blueprint', '@jhipster/jhipster-dev'),
+    });
     return this;
   }
 
   async _lookups(lookups = []) {
     lookups = [].concat(lookups);
     for (const lookup of lookups) {
-      await this.env.lookup(lookup);
+      await this.env.lookup({ ...defaultLookupOptions, ...lookup });
     }
     return this;
   }
@@ -211,10 +233,18 @@ export default class EnvironmentBuilder {
    * @return {EnvironmentBuilder} this for chaining.
    */
   async _lookupBlueprints(options) {
-    const allBlueprints = Object.keys(this._blueprintsWithVersion);
-    if (allBlueprints && allBlueprints.length > 0) {
+    const missingBlueprints = Object.keys(this._blueprintsWithVersion).filter(
+      blueprint => !this.env.isPackageRegistered(packageNameToNamespace(blueprint)),
+    );
+
+    if (missingBlueprints && missingBlueprints.length > 0) {
       // Lookup for blueprints.
-      await this.env.lookup({ ...options, filterPaths: true, packagePatterns: allBlueprints });
+      await this.env.lookup({
+        ...defaultLookupOptions,
+        ...options,
+        filterPaths: true,
+        packagePatterns: missingBlueprints,
+      });
     }
     return this;
   }
@@ -250,13 +280,16 @@ export default class EnvironmentBuilder {
   /**
    * Get blueprints commands.
    *
-   * @return {Object[]} blueprint commands.
+   * @return {Record<string, import('./types.js').CliCommand>} blueprint commands.
    */
   async getBlueprintCommands() {
     let blueprintsPackagePath = await this._getBlueprintPackagePaths();
     if (this.devBlueprintPath) {
       blueprintsPackagePath = blueprintsPackagePath ?? [];
       blueprintsPackagePath.push([devBlueprintNamespace, this.devBlueprintPath]);
+      if (this.localBlueprintExists) {
+        blueprintsPackagePath.push([localBlueprintNamespace, this.localBlueprintPath]);
+      }
     }
     return this._getBlueprintCommands(blueprintsPackagePath);
   }
@@ -298,8 +331,8 @@ export default class EnvironmentBuilder {
    * @returns {Blueprint[]}
    */
   _getBlueprintsFromYoRc() {
-    const yoRc = loadYoRc();
-    if (!yoRc || !yoRc['generator-jhipster']) {
+    const yoRc = readCurrentPathYoRcFile();
+    if (!yoRc?.['generator-jhipster']) {
       return [];
     }
     return loadBlueprintsFromConfiguration(yoRc['generator-jhipster']);
@@ -361,7 +394,7 @@ export default class EnvironmentBuilder {
    * @private
    * Get blueprints commands.
    *
-   * @return {Object[]} commands.
+   * @return {Record<string, import('./types.js').CliCommand>} commands.
    */
   async _getBlueprintCommands(blueprintPackagePaths) {
     if (!blueprintPackagePaths) {
@@ -369,21 +402,21 @@ export default class EnvironmentBuilder {
     }
     let result;
     for (const [blueprint, packagePath] of blueprintPackagePaths) {
-      /* eslint-disable import/no-dynamic-require */
-      /* eslint-disable global-require */
       let blueprintCommand;
       const blueprintCommandFile = `${packagePath}/cli/commands`;
-      const blueprintCommandExtension = ['.js', '.cjs', '.mjs'].find(extension => existsSync(`${blueprintCommandFile}${extension}`));
+      const blueprintCommandExtension = ['.js', '.cjs', '.mjs', '.ts', '.cts', '.mts'].find(extension =>
+        existsSync(`${blueprintCommandFile}${extension}`),
+      );
       if (blueprintCommandExtension) {
         const blueprintCommandsUrl = pathToFileURL(resolve(`${blueprintCommandFile}${blueprintCommandExtension}`));
         try {
           blueprintCommand = (await import(blueprintCommandsUrl)).default;
-          const blueprintCommands = _.cloneDeep(blueprintCommand);
+          const blueprintCommands = cloneDeep(blueprintCommand);
           Object.entries(blueprintCommands).forEach(([_command, commandSpec]) => {
             commandSpec.blueprint = commandSpec.blueprint || blueprint;
           });
           result = { ...result, ...blueprintCommands };
-        } catch (e) {
+        } catch {
           const msg = `Error parsing custom commands found within blueprint: ${blueprint} at ${blueprintCommandsUrl}`;
           /* eslint-disable no-console */
           console.info(`${chalk.green.bold('INFO!')} ${msg}`);
@@ -421,8 +454,6 @@ export default class EnvironmentBuilder {
     }
 
     async function loadSharedOptionsFromFile(sharedOptionsBase, msg, errorMsg) {
-      /* eslint-disable import/no-dynamic-require */
-      /* eslint-disable global-require */
       try {
         const baseExtension = ['.js', '.cjs', '.mjs'].find(extension => existsSync(resolve(`${sharedOptionsBase}${extension}`)));
         if (baseExtension) {
@@ -451,7 +482,7 @@ export default class EnvironmentBuilder {
     for (const [blueprint, packagePath] of blueprintPackagePaths) {
       const errorMsg = `No custom sharedOptions found within blueprint: ${blueprint} at ${packagePath}`;
       const opts = await loadSharedOptionsFromFile(`${packagePath}/cli/sharedOptions`, undefined, errorMsg);
-      result = _.mergeWith(result, opts, joiner);
+      result = mergeWith(result, opts, joiner);
     }
     return result;
   }

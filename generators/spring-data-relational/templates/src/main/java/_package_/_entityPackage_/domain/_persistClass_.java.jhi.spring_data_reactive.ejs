@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -22,7 +22,6 @@
 -%>
 <&_ if (fragment.importSection) { -&>
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 <&_ } -&>
@@ -55,7 +54,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 <%_ for (const relationship of relationships) { _%>
 <&_ if (fragment.relationship<%- relationship.relationshipNameCapitalized %>AnnotationSection) { -&>
-    @Transient
+    @org.springframework.data.annotation.Transient
 <&_ } -&>
 <%_ } -%>
 

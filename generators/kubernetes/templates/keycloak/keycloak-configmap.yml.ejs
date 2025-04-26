@@ -36,7 +36,7 @@ data:
       "oauth2DevicePollingInterval": 5,
       "enabled": true,
       "sslRequired": "external",
-      "registrationAllowed": false,
+      "registrationAllowed": true,
       "registrationEmailAsUsername": false,
       "rememberMe": false,
       "verifyEmail": false,
@@ -459,6 +459,9 @@ data:
       "requiredCredentials": [
         "password"
       ],
+      "defaultGroups": [
+        "/Users"
+      ],
       "otpPolicyType": "totp",
       "otpPolicyAlgorithm": "HmacSHA1",
       "otpPolicyInitialCounter": 0,
@@ -469,6 +472,7 @@ data:
         "FreeOTP",
         "Google Authenticator"
       ],
+      "localizationTexts": {},
       "webAuthnPolicyRpEntityName": "keycloak",
       "webAuthnPolicySignatureAlgorithms": [
         "ES256"
@@ -481,6 +485,7 @@ data:
       "webAuthnPolicyCreateTimeout": 0,
       "webAuthnPolicyAvoidSameAuthenticatorRegister": false,
       "webAuthnPolicyAcceptableAaguids": [],
+      "webAuthnPolicyExtraOrigins": [],
       "webAuthnPolicyPasswordlessRpEntityName": "keycloak",
       "webAuthnPolicyPasswordlessSignatureAlgorithms": [
         "ES256"
@@ -493,6 +498,7 @@ data:
       "webAuthnPolicyPasswordlessCreateTimeout": 0,
       "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
       "webAuthnPolicyPasswordlessAcceptableAaguids": [],
+      "webAuthnPolicyPasswordlessExtraOrigins": [],
       "scopeMappings": [
         {
           "clientScope": "offline_access",
@@ -1032,14 +1038,12 @@ data:
             <%- keycloakRedirectUris %>
             "http://localhost:8100/*",
             "http://127.0.0.1:8761/*",
-            "http://localhost:9000/*",
             "dev.localhost.ionic:*"
           ],
           "webOrigins": [
             <%- keycloakRedirectUris.replace(/\/\*/g, "") %>
             "http://localhost:8100",
-            "http://127.0.0.1:8761",
-            "http://localhost:9000"
+            "http://127.0.0.1:8761"
           ],
           "notBefore": 0,
           "bearerOnly": false,
@@ -1853,22 +1857,6 @@ data:
           "builtIn": true,
           "authenticationExecutions": [
             {
-              "authenticator": "basic-auth",
-              "authenticatorFlow": false,
-              "requirement": "REQUIRED",
-              "priority": 10,
-              "userSetupAllowed": false,
-              "autheticatorFlow": false
-            },
-            {
-              "authenticator": "basic-auth-otp",
-              "authenticatorFlow": false,
-              "requirement": "DISABLED",
-              "priority": 20,
-              "userSetupAllowed": false,
-              "autheticatorFlow": false
-            },
-            {
               "authenticator": "auth-spnego",
               "authenticatorFlow": false,
               "requirement": "DISABLED",
@@ -2259,14 +2247,6 @@ data:
           "builtIn": true,
           "authenticationExecutions": [
             {
-              "authenticator": "no-cookie-redirect",
-              "authenticatorFlow": false,
-              "requirement": "REQUIRED",
-              "priority": 10,
-              "userSetupAllowed": false,
-              "autheticatorFlow": false
-            },
-            {
               "authenticatorFlow": true,
               "requirement": "REQUIRED",
               "priority": 20,
@@ -2312,14 +2292,6 @@ data:
               "autheticatorFlow": false
             },
             {
-              "authenticator": "registration-profile-action",
-              "authenticatorFlow": false,
-              "requirement": "REQUIRED",
-              "priority": 40,
-              "userSetupAllowed": false,
-              "autheticatorFlow": false
-            },
-            {
               "authenticator": "registration-password-action",
               "authenticatorFlow": false,
               "requirement": "REQUIRED",
@@ -2334,6 +2306,14 @@ data:
               "priority": 60,
               "userSetupAllowed": false,
               "autheticatorFlow": false
+            },
+            {
+              "authenticator": "registration-terms-and-conditions",
+              "authenticatorFlow": false,
+              "requirement": "DISABLED",
+              "priority": 70,
+              "autheticatorFlow": false,
+              "userSetupAllowed": false
             }
           ]
         },
@@ -2425,9 +2405,9 @@ data:
           "config": {}
         },
         {
-          "alias": "terms_and_conditions",
+          "alias": "TERMS_AND_CONDITIONS",
           "name": "Terms and Conditions",
-          "providerId": "terms_and_conditions",
+          "providerId": "TERMS_AND_CONDITIONS",
           "enabled": false,
           "defaultAction": false,
           "priority": 20,
@@ -2499,7 +2479,7 @@ data:
         "cibaInterval": "5",
         "frontendUrl": ""
       },
-      "keycloakVersion": "22.0.1",
+      "keycloakVersion": "23.0.1",
       "userManagedAccessAllowed": false,
       "clientProfiles": {
         "profiles": []

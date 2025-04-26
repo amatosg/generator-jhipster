@@ -29,6 +29,8 @@ on:
         type: number
 permissions:
   contents: read
+env:
+  FORCE_COLOR: 2
 jobs:
   comment:
     runs-on: ubuntu-latest
@@ -36,15 +38,15 @@ jobs:
       issues: write
     if: "${{ github.event.action != 'labeled' || github.event.label.name == 'area: check' }}"
     steps:
-      - uses: mshick/add-pr-comment@v2.8.1
+      - uses: mshick/add-pr-comment@v2.8.2
         with:
           issue: ${{ inputs.issue || github.event.issue.number }}
           message: |
-            JHipster is [checking sample](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ## Issue check: JHipster is [checking sample](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
   application:
     name: Check issue ${{ inputs.issue || github.event.issue.number }}
     needs: comment
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-latest'
     defaults:
       run:
         working-directory: ${{ github.workspace }}/app
@@ -58,51 +60,27 @@ jobs:
         with:
           path: generator-jhipster
           fetch-depth: 2
-      - name: 'SETUP: environment'
-        id: setup
-        uses: ./generator-jhipster/.github/actions/setup
-      - uses: actions/setup-node@v3
+      - uses: jhipster/actions/setup-runner@v0
         with:
           node-version: ${{ steps.setup.outputs.node-version }}
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
           java-version: ${{ steps.setup.outputs.java-version }}
-      - name: 'SETUP: load npm cache'
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            ~/.npm
-            ~/.cache/Cypress/
-          key: ${{ runner.os }}-node-${{ steps.setup.outputs.date }}
-      - name: 'SETUP: load maven cache'
-        uses: actions/cache/restore@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ steps.setup.outputs.date }}
-      - name: 'SETUP: load gradle cache'
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ steps.setup.outputs.date }}
-      - name: 'TOOLS: configure tools installed by the system'
-        run: $JHI_SCRIPTS/03-system.sh
-      - name: 'TOOLS: configure git'
-        run: $JHI_SCRIPTS/04-git-config.sh
-      - name: 'Install required NPM version'
-        run: npm install -g npm@${{ steps.setup.outputs.npm-version }} || true
+          npm-version: ${{ steps.setup.outputs.npm-version }}
+          maven-cache: true
+          gradle-cache: true
+          binary-dir: ${{ github.workspace }}/generator-jhipster/bin
       #----------------------------------------------------------------------
       # Install JHipster and generate project+entities
       #----------------------------------------------------------------------
-      - name: 'GENERATION: install JHipster'
-        run: $JHI_SCRIPTS/10-install-jhipster.sh
+      - run: npm ci --ignore-scripts
+        working-directory: ${{ github.workspace }}/generator-jhipster
+      - uses: jhipster/actions/build-jhipster-bom@v0
+        with:
+          jhipster-bom-ref: main
       - name: 'GENERATION: project'
         id: project
-        run: jhipster from-issue ${{ inputs.issue || github.event.issue.number }} --no-code-workspace
+        run: jhipster.cjs from-issue ${{ inputs.issue || github.event.issue.number }} --no-code-workspace --disable-blueprints
       - name: 'GENERATION: jhipster info'
-        run: $JHI_SCRIPTS/14-jhipster-info.sh
+        run: jhipster.cjs info
       #----------------------------------------------------------------------
       # Launch tests
       #----------------------------------------------------------------------
@@ -130,13 +108,13 @@ jobs:
         run: npm run ci:e2e:run --if-present
         timeout-minutes: 15
       - name: 'BACKEND: Store failure logs'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always() && steps.backend.outcome == 'failure'
         with:
           name: log-${{ inputs.issue || github.event.issue.number }}
           path: ${{ steps.setup.outputs.application-path }}/**/test-results/**/*.xml
       - name: 'E2E: Store failure screenshots'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always() && steps.e2e.outcome == 'failure'
         with:
           name: screenshots-${{ inputs.issue || github.event.issue.number }}
@@ -145,9 +123,12 @@ jobs:
         if: always()
         uses: jwalton/gh-docker-logs@v2
     outputs:
+      valid: ${{ steps.project.outputs.valid }}
       yo-rc: ${{ steps.project.outputs.yo-rc }}
       entities-jdl: ${{ steps.project.outputs.entities-jdl }}
       application: ${{ steps.project.outputs.result }}
+      project-summary: ${{ steps.project.outputs.summary }}
+      project-footer: ${{ steps.project.outputs.footer }}
       frontend-check: ${{ steps.frontend.outcome }}
       backend-check: ${{ steps.backend.outcome }}
       e2e-check: ${{ steps.e2e.outcome }}
@@ -158,7 +139,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/github-script@v6
+      - uses: actions/github-script@v7
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -170,15 +151,24 @@ jobs:
                       github.rest.issues.removeLabel({...issue, name: label.name})
                   }
               }
+              if (!${{ needs.application.outputs.valid }}) {
+                  github.rest.issues.addLabels({...issue, labels: ['area: invalid', 'area: stale']})
+              }
             })
-      - uses: mshick/add-pr-comment@v2.8.1
+      - uses: mshick/add-pr-comment@v2.8.2
         with:
           issue: ${{ inputs.issue || github.event.issue.number }}
           message: |
-            JHipster has completed the [sample check](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            `.yo-rc.json`: ${{ needs.application.outputs.yo-rc }}
-            Entities JDL: ${{ needs.application.outputs.entities-jdl }}
-            Application: ${{ needs.application.outputs.application }}
-            Frontend check: ${{ needs.application.outputs.frontend-check }}
-            Backend check: ${{ needs.application.outputs.backend-check }}
-            E2E check: ${{ needs.application.outputs.e2e-check }}
+            ## Issue check: JHipster has completed the [sample check](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ${{ needs.application.outputs.project-summary }}
+
+            | Check | Status |
+            | --- | --- |
+            | Frontend check | ${{ needs.application.outputs.frontend-check == 'success' && ':heavy_check_mark:' || ':x:' }} |
+            | Backend check | ${{ needs.application.outputs.backend-check == 'success' && ':heavy_check_mark:' || ':x:' }} |
+            | E2E check | ${{ needs.application.outputs.e2e-check == 'success' && ':heavy_check_mark:' || ':x:' }} |
+
+            This check uses `jhipster info` or jdl output from the issue description to generate the sample.
+            Bug report that does not contain this information will be marked as invalid.
+
+            ${{ needs.application.outputs.project-footer }}

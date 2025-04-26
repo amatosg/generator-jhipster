@@ -11,8 +11,9 @@
       data-toggle="collapse"
       target="header-tabs"
       aria-expanded="false"
-      aria-label="Toggle navigation">
-        <font-awesome-icon icon="bars" />
+      aria-label="Toggle navigation"
+    >
+      <font-awesome-icon icon="bars" />
     </b-navbar-toggle>
 
     <b-collapse is-nav id="header-tabs">
@@ -23,12 +24,7 @@
             <span v-text="t$('global.menu.home')">Home</span>
           </span>
         </b-nav-item>
-        <b-nav-item-dropdown
-          right
-          id="entity-menu"
-          v-if="authenticated"
-          active-class="active" class="pointer"
-          data-cy="entity">
+        <b-nav-item-dropdown right id="entity-menu" v-if="authenticated" active-class="active" class="pointer" data-cy="entity">
           <template #button-content>
             <span class="navbar-dropdown-menu">
               <font-awesome-icon icon="th-list" />
@@ -47,17 +43,18 @@
           right
           id="admin-menu"
           v-if="hasAnyAuthority('ROLE_ADMIN') && authenticated"
-          :class="{'router-link-active': subIsActive('/admin')}"
+          :class="{ 'router-link-active': subIsActive('/admin') }"
           active-class="active"
           class="pointer"
-          data-cy="adminMenu">
+          data-cy="adminMenu"
+        >
           <template #button-content>
             <span class="navbar-dropdown-menu">
               <font-awesome-icon icon="users-cog" />
               <span class="no-bold" v-text="t$('global.menu.admin.main')">Administration</span>
             </span>
           </template>
-<%_ if (applicationTypeGateway && serviceDiscoveryAny) { _%>
+<%_ if (applicationTypeGateway && gatewayServicesApiAvailable) { _%>
           <b-dropdown-item to="/admin/gateway" active-class="active">
             <font-awesome-icon icon="road" />
             <span v-text="t$('global.menu.admin.gateway')">Gateway</span>
@@ -110,9 +107,13 @@
             <font-awesome-icon icon="flag" />
             <span class="no-bold" v-text="t$('global.menu.language')">Language</span>
           </template>
-          <b-dropdown-item v-for="(value, key) in languages" :key="`lang-${key}`" v-on:click="changeLanguage(key);"
-              :class="{ active: isActiveLanguage(key)}">
-            {{value.name}}
+          <b-dropdown-item
+            v-for="(value, key) in languages"
+            :key="`lang-${key}`"
+            @click="changeLanguage(key)"
+            :class="{ active: isActiveLanguage(key) }"
+          >
+            {{ value.name }}
           </b-dropdown-item>
         </b-nav-item-dropdown>
 <%_ } _%>
@@ -120,16 +121,15 @@
           right
           href="javascript:void(0);"
           id="account-menu"
-          :class="{'router-link-active': subIsActive('/account')}"
+          :class="{ 'router-link-active': subIsActive('/account') }"
           active-class="active"
           class="pointer"
-          data-cy="accountMenu">
+          data-cy="accountMenu"
+        >
           <template #button-content>
             <span class="navbar-dropdown-menu">
               <font-awesome-icon icon="user" />
-              <span class="no-bold" v-text="t$('global.menu.account.main')">
-                Account
-              </span>
+              <span class="no-bold" v-text="t$('global.menu.account.main')"> Account </span>
             </span>
           </template>
 <%_ if (generateUserManagement) { _%>
@@ -148,11 +148,11 @@
             <span v-text="t$('global.menu.account.sessions')">Sessions</span>
           </b-dropdown-item>
 <%_ } _%>
-          <b-dropdown-item data-cy="logout" v-if="authenticated"  v-on:click="logout()" id="logout" active-class="active">
+          <b-dropdown-item data-cy="logout" v-if="authenticated"  @click="logout()" id="logout" active-class="active">
             <font-awesome-icon icon="sign-out-alt" />
             <span v-text="t$('global.menu.account.logout')">Sign out</span>
           </b-dropdown-item>
-          <b-dropdown-item data-cy="login" v-if="!authenticated"  v-on:click="openLogin()" id="login" active-class="active">
+          <b-dropdown-item data-cy="login" v-if="!authenticated" @click="showLogin()" id="login" active-class="active">
             <font-awesome-icon icon="sign-in-alt" />
             <span v-text="t$('global.menu.account.login')">Sign in</span>
           </b-dropdown-item>
@@ -168,8 +168,7 @@
   </b-navbar>
 </template>
 
-<script lang="ts" src="./jhi-navbar.component.ts">
-</script>
+<script lang="ts" src="./jhi-navbar.component.ts"></script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
@@ -177,7 +176,7 @@
     Navbar
     ========================================================================== */
   .navbar-version {
-    font-size: 10px;
+    font-size: 0.65em;
 <%_ if (clientThemeNone) { _%>
     color: #ccc;
 <%_ } _%>
@@ -190,7 +189,7 @@
   }
 
   .jh-navbar .profile-image {
-    margin: -10px 0px;
+    margin: -10px 0;
     height: 40px;
     width: 40px;
     border-radius: 50%;
@@ -243,7 +242,6 @@
 
   .navbar-title {
     display: inline-block;
-    vertical-align: middle;
 <%_ if (clientThemeNone && !clientThemeDark) { _%>
     color: white;
 <%_ } _%>
@@ -253,14 +251,14 @@
     Logo styles
     ========================================================================== */
   .navbar-brand.logo {
-    padding: 5px 15px;
+    padding: 0 7px;
   }
 
   .logo .logo-img {
     height: 45px;
     display: inline-block;
     vertical-align: middle;
-    width: 70px;
+    width: 45px;
   }
 
   .logo-img {

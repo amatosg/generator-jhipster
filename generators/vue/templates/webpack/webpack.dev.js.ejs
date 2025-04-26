@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -18,7 +18,6 @@
 -%>
 'use strict';
 const BrowserSyncPlugin = require('browser-sync-webpack-plugin');
-const webpack = require('webpack');
 
 const { styleLoaders } = require('./vue.utils');
 const config = require('./config');
@@ -26,13 +25,13 @@ const config = require('./config');
 module.exports = (env, options) => {
   const devConfig = {
     module: {
-      rules: styleLoaders({ sourceMap: config.dev.cssSourceMap, usePostCSS: true })
+      rules: styleLoaders({ sourceMap: config.dev.cssSourceMap, usePostCSS: true }),
     },
     // cheap-module-eval-source-map is faster for development
     devtool: config.dev.devtool,
     output: {
       filename: 'app/[name].[contenthash].bundle.js',
-      chunkFilename: 'app/[id].[chunkhash].chunk.js'
+      chunkFilename: 'app/[id].[chunkhash].chunk.js',
     },
     optimization: {
       moduleIds: 'named',
@@ -44,16 +43,16 @@ module.exports = (env, options) => {
     new BrowserSyncPlugin(
       {
         host: 'localhost',
-        port: 9000,
+        port: <%- devServerPortProxy %>,
         proxy: {
           target: `http://localhost:${options.watch ? '<%= applicationTypeMicroservice ? gatewayServerPort : serverPort %>' : '<%= devServerPort %>'}`,
           ws: true,
         },
         socket: {
           clients: {
-            heartbeatTimeout: 60000
-          }
-        }
+            heartbeatTimeout: 60000,
+          },
+        },
         /*
         ,ghostMode: { // uncomment this part to disable BrowserSync ghostMode; https://github.com/jhipster/generator-jhipster/issues/11116
           clicks: false,
@@ -63,9 +62,9 @@ module.exports = (env, options) => {
         } */
       },
       {
-        reload: true
-      }
-    )
+        reload: true,
+      },
+    ),
   );
   return devConfig;
 };

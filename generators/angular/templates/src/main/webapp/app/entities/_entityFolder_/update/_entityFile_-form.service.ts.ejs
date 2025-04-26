@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2023 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -19,12 +19,11 @@
 <%_
   const formDefaultProperties = [
     ...fields.filter(field => field.fieldTypeTimed || field.fieldTypeBoolean || field.id).map(field => field.fieldName),
-    ...relationships.filter(relationship => relationship.collection && (relationship.relationshipManyToMany || relationship.ownerSide)).map(relationship => relationship.propertyName)
+    ...relationships.filter(relationship => relationship.collection && relationship.persistableRelationship).map(relationship => relationship.propertyName)
   ];
   const containDefaultProperties = formDefaultProperties.length > 0;
   const entityFormName = anyFieldIsTimeDerived ? `${entityAngularName}FormRawValue` : `I${entityAngularName}`;
   const newEntityFormName = anyFieldIsTimeDerived ? `New${entityAngularName}FormRawValue` : `New${entityAngularName}`;
-  const noPropertyEntity = fields.filter(field => !field.id).length === 0 && relationships.filter(relationship => relationship.ownerSide || relationship.relationshipManyToMany).length === 0;
 _%>
 import { Injectable } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
@@ -67,15 +66,15 @@ type <%= entityAngularName %>FormDefaults = Pick<New<%= entityAngularName %>, '<
 
 type <%= entityAngularName %>FormGroupContent = {
 <%_ for (field of fields) {
-      const { fieldName, fieldType, fieldTypeBlobContent, fieldValidationRequired, tsType, fieldIsEnum } = field;
+      const { fieldName } = field;
 _%>
   <%= fieldName %>: FormControl<<%= entityFormName %>['<%= fieldName %>']<% if (field.id) { %> | New<%= entityAngularName %>['<%= fieldName %>']<% } %>>;
   <%_ if (field.fieldTypeBinary && !field.blobContentTypeText) { _%>
   <%= fieldName %>ContentType: FormControl<<%= entityFormName %>['<%= fieldName %>ContentType']>;
   <%_ } _%>
 <%_ } _%>
-<%_ for (const relationship of relationships.filter(relationship => relationship.ownerSide || relationship.relationshipManyToMany)) {
-      const { propertyName, otherEntity } = relationship;
+<%_ for (const relationship of relationships.filter(relationship => relationship.persistableRelationship)) {
+      const { propertyName } = relationship;
 _%>
   <%= propertyName %>: FormControl<<%= entityFormName %>['<%= propertyName %>']>;
 <%_ } _%>
@@ -105,7 +104,7 @@ export class <%= entityAngularName %>FormService {
 
     return new FormGroup<<%= entityAngularName %>FormGroupContent>({
 <%_ for (const field of fields) {
-      const { fieldName, fieldType, fieldTypeBlobContent, fieldValidateRules, fieldTypeTemporal, fieldValidationRequired, fieldValidationMinLength, fieldValidationMaxLength, fieldValidationMin, fieldValidationMax, fieldValidationPattern } = field;
+      const { fieldName, fieldValidationRequired, fieldValidationMinLength, fieldValidationMaxLength, fieldValidationMin, fieldValidationMax, fieldValidationPattern } = field;
       const usesValidators = fieldValidationRequired || fieldValidationMinLength || fieldValidationMaxLength || fieldValidationMin || fieldValidationMax || fieldValidationPattern || field.id;
 _%>
       <%= fieldName %>: new FormControl(
@@ -146,8 +145,8 @@ _%>
       <%= fieldName %>ContentType: new FormControl(<%= entityInstance %>RawValue.<%= fieldName %>ContentType),
   <%_ } _%>
 <%_ } _%>
-<%_ for (const relationship of relationships.filter(relationship => relationship.ownerSide || relationship.relationshipManyToMany)) {
-      const { relationshipRequired, propertyName, relationshipName, collection, otherEntity } = relationship;
+<%_ for (const relationship of relationships.filter(relationship => relationship.persistableRelationship)) {
+      const { relationshipRequired, propertyName, collection } = relationship;
 _%>
       <%= propertyName %>: new FormControl(
         <%= entityInstance %>RawValue.<%= propertyName %><% if (collection) { %> ?? []<% } %>
@@ -161,17 +160,11 @@ _%>
     });
   }
 
-  get<%= entityAngularName %>(form: <%= entityAngularName %>FormGroup): I<%= entityAngularName %> | New<%= entityAngularName %> {
-<%_ if (noPropertyEntity) { _%>
-    if (form.controls.<%= primaryKey.name %>.disabled) {
-      // form.value returns <%= primaryKey.name %> with null value for FormGroup with only one FormControl
-      return { <%= primaryKey.name %>: null };
-    }
-<%_ } _%>
+  get<%= entityAngularName %>(form: <%= entityAngularName %>FormGroup):<% if (updatableEntity) { %> I<%= entityAngularName %> |<% } %> New<%= entityAngularName %> {
 <%_ if (anyFieldIsTimeDerived) { _%>
     return this.convert<%= entityAngularName %>RawValueTo<%= entityAngularName %>(form.getRawValue() as <%= entityAngularName %>FormRawValue | New<%= entityAngularName %>FormRawValue);
 <%_ } else { _%>
-    return form.getRawValue() as I<%= entityAngularName %> | New<%= entityAngularName %>;
+    return form.getRawValue() as<% if (updatableEntity) { %> I<%= entityAngularName %> |<% } %> New<%= entityAngularName %>;
 <%_ } _%>
   }
 
@@ -205,18 +198,22 @@ _%>
 
     return {
   <%_ for (field of fields) {
-        const { fieldName, fieldTypeBoolean, fieldTypeTimed, fieldTypeLocalDate } = field;
+        const { fieldName, fieldTypeBoolean, fieldTypeTimed } = field;
   _%>
-    <%_ if (field.id) { _%>
-      <%= fieldName %>: null,
-    <%_ } else if (fieldTypeBoolean) { _%>
-      <%= fieldName %>: false,
-    <%_ } else if (fieldTypeTimed) { _%>
-      <%= fieldName %>: currentTime,
+    <%_ if (field.fieldTsDefaultValue) { _%>
+        <%= fieldName %>: <%- field.fieldTsDefaultValue %>,
+    <%_ } else { _%>
+      <%_ if (field.id) { _%>
+        <%= fieldName %>: null,
+      <%_ } else if (fieldTypeBoolean) { _%>
+        <%= fieldName %>: false,
+      <%_ } else if (fieldTypeTimed) { _%>
+        <%= fieldName %>: currentTime,
+      <%_ } _%>
     <%_ } _%>
   <%_ } _%>
-  <%_ for (const relationship of relationships.filter(({ ownerSide, relationshipManyToMany }) => ownerSide || relationshipManyToMany)) {
-        const { relationshipRequired, propertyName, collection, otherEntity, relationshipName } = relationship;
+  <%_ for (const relationship of relationships.filter(({ persistableRelationship }) => persistableRelationship)) {
+        const { propertyName, collection } = relationship;
   _%>
     <%_ if (collection) { _%>
       <%= propertyName %>: [],
@@ -250,8 +247,8 @@ _%>
       <%= fieldName %>: <%= entityInstance %>.<%= fieldName %> ? <%= entityInstance %>.<%= fieldName %>.format(DATE_TIME_FORMAT) : undefined,
   <%_ } _%>
 <%_ } _%>
-<%_ for (const relationship of relationships.filter(({ ownerSide, relationshipManyToMany }) => ownerSide || relationshipManyToMany)) {
-      const { relationshipRequired, propertyName, collection } = relationship;
+<%_ for (const relationship of relationships.filter(({ persistableRelationship }) => persistableRelationship)) {
+      const { propertyName, collection } = relationship;
 _%>
   <%_ if (collection) { _%>
       <%= propertyName %>: <%= entityInstance %>.<%= propertyName %> ?? [],

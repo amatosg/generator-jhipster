@@ -1,5 +1,5 @@
 #
-# Copyright 2013-2023 the original author or authors from the JHipster project.
+# Copyright 2013-2025 the original author or authors from the JHipster project.
 #
 # This file is part of the JHipster project, see https://www.jhipster.tech/
 # for more information.
@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-name: 'Compare generated applications'
+name: 'Deprecated: Compare generated applications'
 description: 'Experimental compare generated applications action'
 inputs:
   application-path:
@@ -46,12 +46,14 @@ runs:
         echo "Showing config diff changes (won't trigger builds)"
         git -c color.ui=always diff -R --cached -- \
           '.yo-rc.json' '**/.yo-rc.json' \
+          '*.jdl' '**/*.jdl' \
           '.gitignore' '**/.gitignore' \
           '.gitattributes' '**/.gitattributes' \
           '.jhipster/**' '**/.jhipster/**'
         echo "Showing source diff changes (will trigger builds)"
         git -c color.ui=always diff -R --cached --exit-code -- . \
           ':!.yo-rc.json' ':!**/.yo-rc.json' \
+          ':!*.jdl' ':!**/*.jdl' \
           ':!.gitignore' ':!**/.gitignore' \
           ':!.gitattributes' ':!**/.gitattributes' \
           ':!.jhipster/**' ':!**/.jhipster/**' \

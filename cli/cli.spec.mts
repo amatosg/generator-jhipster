@@ -3,25 +3,15 @@ import assert from 'assert';
 import { fork } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { expect, mock, resetAllMocks, fn } from 'esmocha';
+import { after, before, it, describe, expect, resetAllMocks, esmocha } from 'esmocha';
 import { execaCommandSync } from 'execa';
-import { BaseEnvironment } from '@yeoman/types';
+import type { GeneratorMeta } from '@yeoman/types';
+import type FullEnvironment from 'yeoman-environment';
 import { coerce } from 'semver';
-import { defaultHelpers as helpers, createBlueprintFiles } from '../test/support/index.mjs';
 
+import { defaultHelpers as helpers, createBlueprintFiles } from '../lib/testing/index.js';
 import { getCommand as actualGetCommonand } from './utils.mjs';
 import { createProgram } from './program.mjs';
-
-const { logger, getCommand } = await mock<typeof import('./utils.mjs')>('./utils.mjs');
-const { buildJHipster } = await import('./program.mjs');
-
-const __filename = fileURLToPath(import.meta.url);
-const jhipsterCli = join(dirname(__filename), '..', 'bin', 'jhipster.cjs');
-
-const mockCli = async (argv: string[], opts = {}) => {
-  const program = await buildJHipster({ printLogo: () => {}, ...opts, program: createProgram(), loadCommand: key => opts[`./${key}`] });
-  return program.parseAsync(argv);
-};
 
 const cliBlueprintFiles = {
   'cli/commands.js': `export default {
@@ -97,7 +87,26 @@ const cliSharedBlueprintFiles = {
 };
 
 describe('cli', () => {
+  const __filename = fileURLToPath(import.meta.url);
+  const jhipsterCli = join(dirname(__filename), '..', 'bin', 'jhipster.cjs');
+  const logger = { verboseInfo: esmocha.fn(), warn: esmocha.fn(), fatal: esmocha.fn(), debug: esmocha.fn() };
+  const getCommand = esmocha.fn();
+  let mockCli;
   let argv;
+
+  before(async () => {
+    await esmocha.mock('./utils.mjs', { logger, getCommand, CLI_NAME: 'jhipster', done: () => {} } as any);
+    const { buildJHipster } = await import('./program.mjs');
+
+    mockCli = async (argv: string[], opts = {}) => {
+      const program = await buildJHipster({ printLogo: () => {}, ...opts, program: createProgram(), loadCommand: key => opts[`./${key}`] });
+      return program.parseAsync(argv);
+    };
+  });
+  after(() => {
+    esmocha.reset();
+  });
+
   beforeEach(async () => {
     await helpers.prepareTemporaryDir();
   });
@@ -152,13 +161,14 @@ describe('cli', () => {
     const commands = { mocked: {} };
     let generator;
     let runArgs;
-    let env: BaseEnvironment;
+    let env: FullEnvironment;
 
     beforeEach(async () => {
-      getCommand.mockImplementation(actualGetCommonand);
+      getCommand.mockImplementation(actualGetCommonand as any);
 
-      const BaseGenerator = (await import('../generators/base/index.mjs')).default;
-      env = await helpers.createTestEnv();
+      const BaseGenerator = (await import('../generators/base/index.js')).default;
+      env = (await helpers.createTestEnv()) as FullEnvironment;
+      // @ts-expect-error
       generator = new (helpers.createDummyGenerator(BaseGenerator))({ env, sharedData: {} });
       generator._options = {
         foo: {
@@ -168,21 +178,25 @@ describe('cli', () => {
           description: 'Foo bar',
         },
       };
-      env.run = fn<typeof env.run>((...args) => {
+      env.run = esmocha.fn<typeof env.run>((...args) => {
         runArgs = args;
         return Promise.resolve();
       });
-      env.composeWith = fn<typeof env.composeWith>();
+      env.composeWith = esmocha.fn<typeof env.composeWith>() as any;
       const originalGetGeneratorMeta = env.getGeneratorMeta.bind(env);
-      env.getGeneratorMeta = fn<typeof env.create>().mockImplementation((namespace, args, options) => {
+      env.getGeneratorMeta = esmocha.fn((namespace: any): GeneratorMeta | undefined => {
         if (namespace === 'jhipster:mocked') {
           return {
-            importModule: () => ({}),
+            namespace,
+            importModule: async () => ({}),
             resolved: __filename,
             instantiateHelp: () => generator,
+            packageNamespace: undefined,
+            importGenerator: undefined as any,
+            instantiate: generator,
           };
         }
-        return originalGetGeneratorMeta(namespace, args, options);
+        return originalGetGeneratorMeta(namespace);
       });
     });
 
@@ -258,16 +272,8 @@ describe('cli', () => {
             description: 'Foo',
           },
           {
-            option: '--no-foo',
-            description: 'No foo',
-          },
-          {
             option: '--foo-bar',
             description: 'Foo bar',
-          },
-          {
-            option: '--no-foo-bar',
-            description: 'No foo bar',
           },
         ],
       };
